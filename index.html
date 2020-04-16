@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>QONQR zone map</title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+        integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+        crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-providers@1.3.0/leaflet-providers.js"></script>
+    <script src="https://unpkg.com/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.3.7/papaparse.min.js"></script>
+    <style>
+        body,
+        html,
+        #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .legend {
+            color: white;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = L.map('map', {
+            center: [15, 30],
+            zoom: 3,
+            worldCopyJump: true
+        });
+
+        var baseMaps = {
+            "OSM": L.tileLayer.provider("OpenStreetMap.Mapnik"),
+            "OSM Grayscale": L.tileLayer.provider("OpenStreetMap.BlackAndWhite"),
+            "CartoDB Positron": L.tileLayer.provider('CartoDB.Positron'),
+            "CartoDB Dark Matter": L.tileLayer.provider("CartoDB.DarkMatter").addTo(map),
+            "ESRI WorldImagery": L.tileLayer.provider("Esri.WorldImagery"),
+            "Google Hybrid": L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            }),
+            "Wikimedia": L.tileLayer.provider("Wikimedia")
+        }
+
+        var overlays = {
+            "Legion": L.layerGroup().addTo(map),
+            "Swarm": L.layerGroup().addTo(map),
+            "Faceless": L.layerGroup().addTo(map),
+        }
+
+        L.control.layers(baseMaps, overlays).addTo(map);
+
+        var date = new Date().getUTCDate() - 1;
+        if (date < 10) date = "0" + date;
+
+        var url = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/dailyzoneupdates-" + date + ".csv"
+
+        function clamp(num) {
+            var min = 10;
+            var max = 50;
+            return num <= min ? min : num >= max ? max : num;
+        }
+
+        Papa.parse(url, {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function (csv) {
+                console.log(csv);
+                for (var i in csv.data) {
+                    var d = csv.data[i];
+                    if (!d.Latitude) continue;
+                    var desc = "<b>" + d.Description + "</b>" +
+                        "<br>Captured: " + d.DateCapturedUtc +
+                        "<br>Legion: " + d.LegionCount.toLocaleString() +
+                        "<br>Swarm: " + d.SwarmCount.toLocaleString() +
+                        "<br>Faceless: " + d.FacelessCount.toLocaleString();
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
+                }
+            }
+        });
+
+        var legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend');
+            var dt = new Date();
+            dt.setDate(dt.getDate() - 1);
+            div.innerHTML += 'Shows zones with activity on ' + dt.toISOString().slice(0, 10) + " QST<br><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+            return div;
+        };
+        legend.addTo(map);
+
+    </script>
+
+</body>
+
+</html>
