@@ -43,7 +43,18 @@
         var map = L.map('map', {
             center: [15, 30],
             zoom: 3,
+            minZoom: 2,
+            maxZoom: 12,
+            maxBounds: [[-90, -360], [90, 360]],
             worldCopyJump: true
+        });
+
+        map.locate({
+            setView: true,
+            maxZoom: 5
+        }).on("locationfound", function(e) {
+            console.log(e);
+            L.circle([e.latitude, e.longitude], {color: "cyan", radius: e.accuracy}).bindTooltip("You").addTo(map);
         });
 
         var baseMaps = {
@@ -87,8 +98,10 @@
             dynamicTyping: true,
             complete: function (csv) {
                 console.log(csv);
-                for (var i in csv.data) {
-                    var d = csv.data[i];
+                var sorted_data = csv.data.sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
+                console.log(sorted_data);
+                for (var i in sorted_data) {
+                    var d = sorted_data[i];
                     if (!d.Latitude) continue;
                     var desc = "<b>" + d.Description + "</b>" +
                         "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
