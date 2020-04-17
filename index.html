@@ -103,7 +103,7 @@
             if (delta == "?") {
                 return "";
             } else if (delta >= 0) {
-                delta = "+" + delta;
+                delta = "+" + delta.toLocaleString();
             }
             return " (" + delta.toLocaleString() + ")";
         }
