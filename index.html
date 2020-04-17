@@ -32,6 +32,15 @@
             background-color: rgba(0, 0, 0, 0.8);
             border-radius: 5px;
         }
+        .legion {
+            color: red;
+        }
+        .swarm {
+            color: green;
+        }
+        .faceless {
+            color: purple;
+        }
     </style>
 
 </head>
@@ -127,6 +136,7 @@
                         console.log(csv);
                         var sorted_data = csv.data.sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
                         console.log(sorted_data);
+                        var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
                         for (var i in sorted_data) {
                             var d = sorted_data[i];
                             if (!d.Latitude) continue;
@@ -140,9 +150,9 @@
                             var desc = "<b>" + d.Description + "</b>" +
                                 "<br>Zone ID: " + d.ZoneId +
                                 "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
-                                "<br>Legion: " + d.LegionCount.toLocaleString() + formatDelta(legionDelta) +
-                                "<br>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(swarmDelta) +
-                                "<br>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(facelessDelta);
+                                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(legionDelta) +
+                                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(swarmDelta) +
+                                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(facelessDelta) + "</div>";
                             if (d.LegionCount) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
                             }
@@ -152,7 +162,14 @@
                             if (d.FacelessCount) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
                             }
+                            totalLegion += d.LegionCount;
+                            totalSwarm += d.SwarmCount;
+                            totalFaceless += d.FacelessCount;
                         }
+                        $("#stats").append("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
+                            "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
+                            "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
+                            "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
                     }
                 });
             }
@@ -162,7 +179,8 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += 'Shows zones with activity on ' + date.toISOString().slice(0, 10) + " QST<br><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+            div.innerHTML += 'Shows zones with activity on ' + date.toISOString().slice(0, 10) +
+                " QST<br><div id='stats'></div><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             return div;
         };
         legend.addTo(map);
