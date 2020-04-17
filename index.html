@@ -163,13 +163,13 @@
                                 "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.legionDelta) +
                                 "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.swarmDelta) +
                                 "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.facelessDelta) + "</div>";
-                            if (d.LegionCount) {
+                            if (d.LegionCount && d.ZoneControlState == 1) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
                             }
-                            if (d.SwarmCount) {
+                            if (d.SwarmCount && d.ZoneControlState == 2) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
                             }
-                            if (d.FacelessCount) {
+                            if (d.FacelessCount && d.ZoneControlState == 3) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
                             }
                             totalLegion += d.LegionCount;
