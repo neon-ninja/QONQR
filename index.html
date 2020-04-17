@@ -91,7 +91,7 @@
                     var d = csv.data[i];
                     if (!d.Latitude) continue;
                     var desc = "<b>" + d.Description + "</b>" +
-                        "<br>Captured: " + d.DateCapturedUtc +
+                        "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
                         "<br>Legion: " + d.LegionCount.toLocaleString() +
                         "<br>Swarm: " + d.SwarmCount.toLocaleString() +
                         "<br>Faceless: " + d.FacelessCount.toLocaleString();
