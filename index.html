@@ -95,9 +95,15 @@
                         "<br>Legion: " + d.LegionCount.toLocaleString() +
                         "<br>Swarm: " + d.SwarmCount.toLocaleString() +
                         "<br>Faceless: " + d.FacelessCount.toLocaleString();
-                    L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
-                    L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
-                    L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
+                    if (d.LegionCount) {
+                        L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
+                    }
+                    if (d.SwarmCount) {
+                        L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
+                    }
+                    if (d.FacelessCount) {
+                        L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
+                    }
                 }
             }
         });
