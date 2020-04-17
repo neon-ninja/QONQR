@@ -117,6 +117,12 @@
             return " (" + delta.toLocaleString() + ")";
         }
 
+        var zoneControlState = {
+            1: "legion",
+            2: "swarm",
+            3: "faceless"
+        }
+
         Papa.parse(baseUrl + prevDay + suffix, {
             download: true,
             header: true,
@@ -134,25 +140,29 @@
                     dynamicTyping: true,
                     complete: function (csv) {
                         console.log(csv);
-                        var sorted_data = csv.data.sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
+                        var sorted_data = csv.data.filter(e => e.Latitude != undefined).sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
                         console.log(sorted_data);
                         var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
+                        var deltas = []
                         for (var i in sorted_data) {
                             var d = sorted_data[i];
-                            if (!d.Latitude) continue;
                             var pd = prevDayLookup[d.ZoneId];
-                            var legionDelta = "?", swarmDelta = "?", facelessDelta = "?";
+                            d.legionDelta = "?";
+                            d.swarmDelta = "?";
+                            d.facelessDelta = "?";
                             if (pd) {
-                                legionDelta = d.LegionCount - pd.LegionCount
-                                swarmDelta = d.SwarmCount - pd.SwarmCount
-                                facelessDelta = d.FacelessCount - pd.FacelessCount
+                                d.legionDelta = d.LegionCount - pd.LegionCount
+                                d.swarmDelta = d.SwarmCount - pd.SwarmCount
+                                d.facelessDelta = d.FacelessCount - pd.FacelessCount
+                                d.totalDelta = Math.abs(d.legionDelta) + Math.abs(d.swarmDelta) + Math.abs(d.facelessDelta)
                             }
-                            var desc = "<b>" + d.Description + "</b>" +
+                            var className = zoneControlState[d.ZoneControlState]
+                            var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
                                 "<br>Zone ID: " + d.ZoneId +
                                 "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
-                                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(legionDelta) +
-                                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(swarmDelta) +
-                                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(facelessDelta) + "</div>";
+                                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.legionDelta) +
+                                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.swarmDelta) +
+                                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.facelessDelta) + "</div>";
                             if (d.LegionCount) {
                                 L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
                             }
@@ -170,6 +180,15 @@
                             "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
                             "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
                             "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
+                        var sorted_data = sorted_data.filter(e => e.totalDelta != undefined).sort((a, b) => a.totalDelta < b.totalDelta ? 1 : -1);
+                        console.log(sorted_data);
+                        var top10 = sorted_data.slice(0,10);
+                        console.log(top10);
+                        for (var i in top10) {
+                            var d = top10[i];
+                            var className = zoneControlState[d.ZoneControlState]
+                            $("#top10").append("<div style='text-decoration:underline;cursor:pointer;' onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='" + className + "'>" + d.Description + "</div>")
+                        }
                     }
                 });
             }
@@ -180,7 +199,7 @@
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += 'Shows zones with activity on ' + date.toISOString().slice(0, 10) +
-                " QST<br><div id='stats'></div><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+                " QST<br><div id='stats'></div><div id='top10'>Top 10 zones:</div><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             return div;
         };
         legend.addTo(map);
