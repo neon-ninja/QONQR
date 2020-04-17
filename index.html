@@ -123,73 +123,103 @@
             3: "faceless"
         }
 
-        Papa.parse(baseUrl + prevDay + suffix, {
+        function createMarkers() {
+            var sorted_data = csv.data.filter(e => e.Latitude != undefined).sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
+            console.log(sorted_data);
+            var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
+            var deltas = []
+            for (var i in sorted_data) {
+                var d = sorted_data[i];
+                var pd = prevDayLookup[d.ZoneId];
+                d.legionDelta = "?";
+                d.swarmDelta = "?";
+                d.facelessDelta = "?";
+                if (pd) {
+                    d.legionDelta = d.LegionCount - pd.LegionCount
+                    d.swarmDelta = d.SwarmCount - pd.SwarmCount
+                    d.facelessDelta = d.FacelessCount - pd.FacelessCount
+                    d.totalDelta = Math.abs(d.legionDelta) + Math.abs(d.swarmDelta) + Math.abs(d.facelessDelta)
+                }
+                var className = zoneControlState[d.ZoneControlState]
+                var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
+                    "<br>Zone ID: " + d.ZoneId +
+                    "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
+                    "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.legionDelta) +
+                    "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.swarmDelta) +
+                    "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.facelessDelta) + "</div>";
+                if (d.LegionCount && d.ZoneControlState == 1) {
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
+                }
+                if (d.SwarmCount && d.ZoneControlState == 2) {
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
+                }
+                if (d.FacelessCount && d.ZoneControlState == 3) {
+                    L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
+                }
+                totalLegion += d.LegionCount;
+                totalSwarm += d.SwarmCount;
+                totalFaceless += d.FacelessCount;
+            }
+            $("#stats").append("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
+                "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
+                "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
+                "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
+            var sorted_data = sorted_data.filter(e => e.totalDelta != undefined).sort((a, b) => a.totalDelta < b.totalDelta ? 1 : -1);
+            console.log(sorted_data);
+            var top10 = sorted_data.slice(0,10);
+            console.log(top10);
+            for (var i in top10) {
+                var d = top10[i];
+                var className = zoneControlState[d.ZoneControlState];
+                var country = countries[d.CountryId].Description;
+                var region = regions[d.RegionId].description;
+                $("#top10").append("<div style='text-decoration:underline;cursor:pointer;' onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='" +
+                    className + "'>" + d.Description + ", " + region + ", " + country + "</div>")
+            }
+        }
+
+        Papa.parse("https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/Countries.csv", {
             download: true,
             header: true,
             dynamicTyping: true,
-            complete: function(prevDayCSV) {
-                console.log(prevDayCSV);
-                prevDayLookup = {}
-                for (var i in prevDayCSV.data) {
-                    var d = prevDayCSV.data[i];
-                    prevDayLookup[d.ZoneId] = d;
+            complete: function(countries) {
+                window.countries = {}
+                for (var i in countries.data) {
+                    var c = countries.data[i];
+                    window.countries[c.countryid] = c;
                 }
-                Papa.parse(baseUrl + day + suffix, {
-                    download: true,
-                    header: true,
-                    dynamicTyping: true,
-                    complete: function (csv) {
-                        console.log(csv);
-                        var sorted_data = csv.data.filter(e => e.Latitude != undefined).sort((a, b) => a.LegionCount + a.SwarmCount + a.FacelessCount < b.LegionCount + b.SwarmCount + b.FacelessCount ? 1 : -1)
-                        console.log(sorted_data);
-                        var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
-                        var deltas = []
-                        for (var i in sorted_data) {
-                            var d = sorted_data[i];
-                            var pd = prevDayLookup[d.ZoneId];
-                            d.legionDelta = "?";
-                            d.swarmDelta = "?";
-                            d.facelessDelta = "?";
-                            if (pd) {
-                                d.legionDelta = d.LegionCount - pd.LegionCount
-                                d.swarmDelta = d.SwarmCount - pd.SwarmCount
-                                d.facelessDelta = d.FacelessCount - pd.FacelessCount
-                                d.totalDelta = Math.abs(d.legionDelta) + Math.abs(d.swarmDelta) + Math.abs(d.facelessDelta)
-                            }
-                            var className = zoneControlState[d.ZoneControlState]
-                            var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
-                                "<br>Zone ID: " + d.ZoneId +
-                                "<br>Captured: " + d.DateCapturedUtc.slice(0,10) +
-                                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.legionDelta) +
-                                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.swarmDelta) +
-                                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.facelessDelta) + "</div>";
-                            if (d.LegionCount && d.ZoneControlState == 1) {
-                                L.circleMarker([d.Latitude, d.Longitude], { color: "red", radius: clamp(d.LegionCount / 1E6) }).addTo(overlays["Legion"]).bindTooltip(desc);
-                            }
-                            if (d.SwarmCount && d.ZoneControlState == 2) {
-                                L.circleMarker([d.Latitude, d.Longitude], { color: "green", radius: clamp(d.SwarmCount / 1E6) }).addTo(overlays["Swarm"]).bindTooltip(desc);
-                            }
-                            if (d.FacelessCount && d.ZoneControlState == 3) {
-                                L.circleMarker([d.Latitude, d.Longitude], { color: "purple", radius: clamp(d.FacelessCount / 1E6) }).addTo(overlays["Faceless"]).bindTooltip(desc);
-                            }
-                            totalLegion += d.LegionCount;
-                            totalSwarm += d.SwarmCount;
-                            totalFaceless += d.FacelessCount;
-                        }
-                        $("#stats").append("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
-                            "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
-                            "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
-                            "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
-                        var sorted_data = sorted_data.filter(e => e.totalDelta != undefined).sort((a, b) => a.totalDelta < b.totalDelta ? 1 : -1);
-                        console.log(sorted_data);
-                        var top10 = sorted_data.slice(0,10);
-                        console.log(top10);
-                        for (var i in top10) {
-                            var d = top10[i];
-                            var className = zoneControlState[d.ZoneControlState]
-                            $("#top10").append("<div style='text-decoration:underline;cursor:pointer;' onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='" + className + "'>" + d.Description + "</div>")
-                        }
+                Papa.parse("https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/Regions.csv", {
+                download: true,
+                header: true,
+                dynamicTyping: true,
+                complete: function(regions) {
+                    window.regions = {}
+                    for (var i in regions.data) {
+                        var r = regions.data[i];
+                        window.regions[r.regionid] = r;
                     }
+                    Papa.parse(baseUrl + prevDay + suffix, {
+                        download: true,
+                        header: true,
+                        dynamicTyping: true,
+                        complete: function(prevDayCSV) {
+                            window.prevDayLookup = {}
+                            for (var i in prevDayCSV.data) {
+                                var d = prevDayCSV.data[i];
+                                window.prevDayLookup[d.ZoneId] = d;
+                            }
+                            Papa.parse(baseUrl + day + suffix, {
+                                download: true,
+                                header: true,
+                                dynamicTyping: true,
+                                complete: function (csv) {
+                                    window.csv = csv;
+                                    createMarkers();
+                                }
+                            });
+                        }
+                    });
+                }
                 });
             }
         });
