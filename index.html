@@ -55,6 +55,7 @@
         }).on("locationfound", function(e) {
             console.log(e);
             L.circle([e.latitude, e.longitude], {color: "cyan", radius: e.accuracy}).bindTooltip("You").addTo(map);
+            L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: 1609 * 1000}).addTo(map);
         });
 
         var baseMaps = {
