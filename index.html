@@ -67,10 +67,13 @@
 
         L.control.layers(baseMaps, overlays).addTo(map);
 
-        var date = new Date().getUTCDate() - 1;
-        if (date < 10) date = "0" + date;
+        var date = new Date();
+        date.setHours(date.getHours() - 1); // one hour time delay to account for delay in data update
+        date.setDate(date.getDate() - 1); // get yesterday's data
+        var day = date.getUTCDate();
+        if (day < 10) day = "0" + day;
 
-        var url = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/dailyzoneupdates-" + date + ".csv"
+        var url = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/dailyzoneupdates-" + day + ".csv"
 
         function clamp(num) {
             var min = 10;
@@ -103,9 +106,7 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            var dt = new Date();
-            dt.setDate(dt.getDate() - 1);
-            div.innerHTML += 'Shows zones with activity on ' + dt.toISOString().slice(0, 10) + " QST<br><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+            div.innerHTML += 'Shows zones with activity on ' + date.toISOString().slice(0, 10) + " QST<br><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             return div;
         };
         legend.addTo(map);
