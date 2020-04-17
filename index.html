@@ -41,6 +41,10 @@
         .faceless {
             color: purple;
         }
+        .link {
+            text-decoration: underline;
+            cursor: pointer;
+        }
     </style>
 
 </head>
@@ -160,7 +164,7 @@
                 totalSwarm += d.SwarmCount;
                 totalFaceless += d.FacelessCount;
             }
-            $("#stats").append("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
+            $("#stats").prepend("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
                 "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
                 "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
                 "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
@@ -173,7 +177,7 @@
                 var className = zoneControlState[d.ZoneControlState];
                 var country = countries[d.CountryId].Description;
                 var region = regions[d.RegionId].description;
-                $("#top10").append("<div style='text-decoration:underline;cursor:pointer;' onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='" +
+                $("#top10").append("<div onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='link " +
                     className + "'>" + d.Description + ", " + region + ", " + country + "</div>")
             }
         }
@@ -226,10 +230,14 @@
 
         var legend = L.control({ position: 'bottomright' });
 
+        function statsToggle() {
+            $("#stats").toggle();
+        }
+
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += 'Shows zones with activity on ' + date.toISOString().slice(0, 10) +
-                " QST<br><div id='stats'></div><div id='top10'>Top 10 zones:</div><a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+                " QST<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'><div id='top10'>Top 10 zones:</div></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             return div;
         };
         legend.addTo(map);
