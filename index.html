@@ -68,7 +68,18 @@
         }).on("locationfound", function(e) {
             console.log(e);
             L.circle([e.latitude, e.longitude], {color: "cyan", radius: e.accuracy}).bindTooltip("You").addTo(map);
-            L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: 1609 * 1000, interactive: false}).addTo(map);
+            var range_km = 1609.34;
+            if (new Date().getUTCDay() == 1) { // Monday
+                var week = Math.floor(new Date().getUTCDate() / 7);
+                if (week == 2) {
+                    range_km = 4828.032;
+                } else if (week == 3) {
+                    range_km = 9656.064;
+                } else if (week >= 4) {
+                    range_km = 20116.8;
+                }
+            }
+            L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false}).addTo(map);
         });
 
         var baseMaps = {
