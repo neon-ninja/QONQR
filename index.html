@@ -71,14 +71,15 @@
             var range_km = 1609.34;
             if (new Date().getUTCDay() == 1) { // Monday
                 var week = Math.floor(new Date().getUTCDate() / 7);
-                if (week == 2) {
+                if (week == 1) {
                     range_km = 4828.032;
-                } else if (week == 3) {
+                } else if (week == 2) {
                     range_km = 9656.064;
-                } else if (week >= 4) {
+                } else if (week >= 3) {
                     range_km = 20116.8;
                 }
             }
+            console.log(range_km);
             L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false}).addTo(map);
         });
 
