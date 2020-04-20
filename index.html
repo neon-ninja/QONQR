@@ -174,7 +174,7 @@
         }
 
         function formatDelta(delta) {
-            if (delta == undefined || delta == "?") {
+            if (!delta) {
                 return "";
             } else if (delta >= 0) {
                 delta = "+" + delta.toLocaleString();
@@ -197,9 +197,9 @@
                 "<br>Zone ID: " + d.ZoneId +
                 "<br>Captured: " + d.DateCapturedUtc.slice(0,19) +
                 "<br>Last updated: " + d.LastUpdateDateUtc.slice(0,19) +
-                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.legionDelta) +
-                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.swarmDelta) +
-                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.facelessDelta) + "</div>";
+                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
+                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
+                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div>";
             if (d.ZoneControlState == 0) {
                 d.layer = uncaptured;
                 var marker = L.circleMarker([d.Latitude, d.Longitude], { color: "orange", radius: clamp(d.LegionCount / 1E6), zoneData: d }).addTo(uncaptured).bindTooltip(desc);
@@ -230,33 +230,9 @@
             var sorted_data = data.sort((a,b) => a.TotalBots < b.TotalBots ? 1 : -1)
             console.log(sorted_data);
             var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
-            var deltas = []
-            var seenZoneIds = [];
             for (var i in sorted_data) {
                 var d = sorted_data[i];
-                var pd = prevDayLookup[d.ZoneId];
-                d.legionDelta = "?";
-                d.swarmDelta = "?";
-                d.facelessDelta = "?";
-                seenZoneIds.push(d.ZoneId);
-                if (pd) {
-                    d.legionDelta = d.LegionCount - pd.LegionCount
-                    d.swarmDelta = d.SwarmCount - pd.SwarmCount
-                    d.facelessDelta = d.FacelessCount - pd.FacelessCount
-                    d.totalDelta = Math.abs(d.legionDelta) + Math.abs(d.swarmDelta) + Math.abs(d.facelessDelta)
-                }
-                createMarkerForData(d);
-                totalLegion += d.LegionCount;
-                totalSwarm += d.SwarmCount;
-                totalFaceless += d.FacelessCount;
-            }
-            var prevMarkersNotCovered = Object.values(prevDayLookup).filter(e => !seenZoneIds.includes(e.ZoneId))
-            for (var d of prevMarkersNotCovered) {
-                d.TotalBots = d.LegionCount + d.SwarmCount + d.FacelessCount;
-            }
-            prevMarkersNotCovered = prevMarkersNotCovered.filter(d => d.TotalBots > 0).sort((a,b) => a.TotalBots < b.TotalBots ? 1 : -1)
-            console.log(prevMarkersNotCovered)
-            for (var d of prevMarkersNotCovered) {
+                d.TotalDelta = Math.abs(d.LegionDelta) + Math.abs(d.SwarmDelta) + Math.abs(d.FacelessDelta)
                 createMarkerForData(d);
                 totalLegion += d.LegionCount;
                 totalSwarm += d.SwarmCount;
@@ -265,8 +241,8 @@
             $("#stats").prepend("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
                 "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
                 "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
-                "</div><div>Total zones: " + (sorted_data.length + prevMarkersNotCovered.length).toLocaleString() + "</div>");
-            var sorted_data = sorted_data.filter(e => e.totalDelta != undefined).sort((a, b) => a.totalDelta < b.totalDelta ? 1 : -1);
+                "</div><div>Total zones: " + sorted_data.length.toLocaleString() + "</div>");
+            var sorted_data = sorted_data.filter(e => e.TotalDelta != undefined).sort((a, b) => a.TotalDelta < b.TotalDelta ? 1 : -1);
             console.log(sorted_data);
             var top10 = sorted_data.slice(0,10);
             console.log(top10);
@@ -291,39 +267,26 @@
                     window.countries[c.countryid] = c;
                 }
                 Papa.parse(baseUrl + "Regions.csv", {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                complete: function(regions) {
-                    window.regions = {}
-                    for (var i in regions.data) {
-                        var r = regions.data[i];
-                        window.regions[r.regionid] = r;
-                    }
-                    Papa.parse(prevDayUrl, {
-                        download: true,
-                        header: true,
-                        dynamicTyping: true,
-                        skipEmptyLines: true,
-                        complete: function(prevDayCSV) {
-                            window.prevDayLookup = {}
-                            for (var i in prevDayCSV.data) {
-                                var d = prevDayCSV.data[i];
-                                window.prevDayLookup[d.ZoneId] = d;
-                            }
-                            Papa.parse(baseUrl + "monthly_unique_zones.csv", {
-                                download: true,
-                                header: true,
-                                dynamicTyping: true,
-                                skipEmptyLines: true,
-                                complete: function (csv) {
-                                    window.csv = csv;
-                                    createMarkers();
-                                }
-                            });
+                    download: true,
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(regions) {
+                        window.regions = {}
+                        for (var i in regions.data) {
+                            var r = regions.data[i];
+                            window.regions[r.regionid] = r;
                         }
-                    });
-                }
+                        Papa.parse(baseUrl + "monthly_unique_zones.csv", {
+                            download: true,
+                            header: true,
+                            dynamicTyping: true,
+                            skipEmptyLines: true,
+                            complete: function (csv) {
+                                window.csv = csv;
+                                createMarkers();
+                            }
+                        });
+                    }
                 });
             }
         });
