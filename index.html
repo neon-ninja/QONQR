@@ -135,16 +135,17 @@
 
         var layers = Object.keys(overlays);
 
+        window.teamfilter = [0, 1, 2, 3];
         map.on("overlayadd", function(e) {
             layers.push(e.name);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
-            var filtered_data = data.filter(e => indices.includes(e.ZoneControlState))
-            createPointsLayer(filtered_data);
+            window.teamfilter = indices;
+            createPointsLayer();
         }).on("overlayremove", function(e) {
             layers.splice(layers.indexOf(e.name), 1);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
-            var filtered_data = data.filter(e => indices.includes(e.ZoneControlState))
-            createPointsLayer(filtered_data);
+            window.teamfilter = indices;
+            createPointsLayer();
         });
 
 
@@ -175,7 +176,9 @@
             return desc;
         }
 
-        function createPointsLayer(data) {
+        function createPointsLayer() {
+            var data = window.data.filter(e => e.TotalCount > countfilter && new Date(e.LastUpdateDateUtc) > timefilter && teamfilter.includes(e.ZoneControlState))
+            console.log(data);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
@@ -278,28 +281,24 @@
         $("#filter").change(function() {
             console.log(this.value);
             window.countfilter = this.value;
-            var filtered_data = data.filter(e => e.TotalCount > this.value && new Date(e.LastUpdateDateUtc) > window.timefilter);
-            createPointsLayer(filtered_data);
+            createPointsLayer();
         })
 
         $("#filtertime").change(function() {
             console.log(this.value);
-            var filtered_data = data.filter(e => e.TotalCount > window.countfilter);
             if (this.value == "month") {
                 window.timefilter = 0;
-                createPointsLayer(filtered_data);
+                createPointsLayer();
             } else if (this.value == "week") {
                 var lastweek = new Date()
                 lastweek.setDate(lastweek.getDate() - 7);
                 window.timefilter = lastweek;
-                filtered_data = filtered_data.filter(e => new Date(e.LastUpdateDateUtc) > lastweek);
-                createPointsLayer(filtered_data);
+                createPointsLayer();
             } else if (this.value == "day") {
                 var yesterday = new Date()
                 yesterday.setDate(yesterday.getDate() - 1);
                 window.timefilter = yesterday;
-                filtered_data = filtered_data.filter(e => new Date(e.LastUpdateDateUtc) > yesterday);
-                createPointsLayer(filtered_data);
+                createPointsLayer();
             }
         })
 
