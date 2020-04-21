@@ -190,7 +190,7 @@
                     var i = points.indexOf(feature);
                     L.popup()
                     .setLatLng(e.latlng)
-                    .setContent(buildDescString(filtered_data[i]))
+                    .setContent(buildDescString(data[i]))
                     .openOn(map);
                 },
                 data: points
