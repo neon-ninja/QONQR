@@ -286,6 +286,7 @@
             console.log(this.value);
             var filtered_data = data.filter(e => e.TotalCount > window.countfilter);
             if (this.value == "month") {
+                window.timefilter = 0;
                 createPointsLayer(filtered_data);
             } else if (this.value == "week") {
                 var lastweek = new Date()
