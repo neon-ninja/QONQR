@@ -228,7 +228,7 @@
         }
 
         var baseUrl = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/";
-        map.spin(true);
+        map.spin(true, {color: "white"});
         Papa.parse(baseUrl + "Countries.csv", {
             download: true,
             header: true,
