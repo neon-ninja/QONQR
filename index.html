@@ -267,16 +267,39 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += 'Shows zones with activity in the past month' +
+            div.innerHTML += 'Shows zones with activity in the past <select id="filtertime"><option>month</option><option>week</option><option>day</option></select>' +
                 "<br><select id='filter'><option value=0>Show all zones</option><option value=100000>Hide zones < 100K</option><option value=1000000>Hide zones < 1M</option><option value=10000000>Hide zones < 10M</option></select>" +
                 "<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'><div id='top10'>Top 10 zones:</div></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             return div;
         };
         legend.addTo(map);
+        window.countfilter = 0;
+        window.timefilter = 0;
         $("#filter").change(function() {
             console.log(this.value);
-            var filtered_data = data.filter(e => e.TotalCount > this.value);
+            window.countfilter = this.value;
+            var filtered_data = data.filter(e => e.TotalCount > this.value && new Date(e.LastUpdateDateUtc) > window.timefilter);
             createPointsLayer(filtered_data);
+        })
+
+        $("#filtertime").change(function() {
+            console.log(this.value);
+            var filtered_data = data.filter(e => e.TotalCount > window.countfilter);
+            if (this.value == "month") {
+                createPointsLayer(filtered_data);
+            } else if (this.value == "week") {
+                var lastweek = new Date()
+                lastweek.setDate(lastweek.getDate() - 7);
+                window.timefilter = lastweek;
+                filtered_data = filtered_data.filter(e => new Date(e.LastUpdateDateUtc) > lastweek);
+                createPointsLayer(filtered_data);
+            } else if (this.value == "day") {
+                var yesterday = new Date()
+                yesterday.setDate(yesterday.getDate() - 1);
+                window.timefilter = yesterday;
+                filtered_data = filtered_data.filter(e => new Date(e.LastUpdateDateUtc) > yesterday);
+                createPointsLayer(filtered_data);
+            }
         })
 
     </script>
