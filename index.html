@@ -273,6 +273,7 @@
             div.innerHTML += 'Shows zones with activity in the past <select id="filtertime"><option>month</option><option>week</option><option>day</option></select>' +
                 "<br><select id='filter'><option value=0>Show all zones</option><option value=100000>Hide zones < 100K</option><option value=1000000>Hide zones < 1M</option><option value=10000000>Hide zones < 10M</option></select>" +
                 "<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'><div id='top10'>Top 10 zones:</div></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+            L.DomEvent.disableClickPropagation(div);
             return div;
         };
         legend.addTo(map);
