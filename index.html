@@ -179,7 +179,7 @@
         }
 
         function createPointsLayer() {
-            var data = window.data.filter(e => e.TotalCount > countfilter && new Date(e.LastUpdateDateUtc) > timefilter && teamfilter.includes(e.ZoneControlState))
+            var data = window.data.filter(e => e.TotalCount >= countfilter && new Date(e.LastUpdateDateUtc) > timefilter && teamfilter.includes(e.ZoneControlState))
             console.log(data);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
