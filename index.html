@@ -91,7 +91,6 @@
             setView: true,
             maxZoom: 5
         }).on("locationfound", function(e) {
-            console.log(e);
             L.circle([e.latitude, e.longitude], {color: "cyan", radius: e.accuracy}).bindTooltip("You").addTo(map);
             var range_km = 1609.34;
             if (new Date().getUTCDay() == 1) { // Monday
@@ -104,7 +103,6 @@
                     range_km = 20116.8;
                 }
             }
-            console.log(range_km);
             L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false}).addTo(map);
         });
 
@@ -180,7 +178,7 @@
 
         function createPointsLayer() {
             var data = window.data.filter(e => e.TotalCount >= countfilter && new Date(e.LastUpdateDateUtc) > timefilter && teamfilter.includes(e.ZoneControlState))
-            console.log(data);
+            console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
@@ -214,9 +212,7 @@
                 "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
                 "</div><div>Total zones: " + data.length.toLocaleString() + "</div>");
             var sorted_data = data.filter(e => e.TotalDelta != undefined).sort((a, b) => a.TotalDelta < b.TotalDelta ? 1 : -1);
-            console.log(sorted_data);
             var top10 = sorted_data.slice(0,10);
-            console.log(top10);
             for (var i in top10) {
                 var d = top10[i];
                 var className = zoneControlState[d.ZoneControlState];
@@ -284,13 +280,11 @@
         window.countfilter = 0;
         window.timefilter = 0;
         $("#filter").change(function() {
-            console.log(this.value);
             window.countfilter = this.value;
             createPointsLayer();
         })
 
         $("#filtertime").change(function() {
-            console.log(this.value);
             if (this.value == "month") {
                 window.timefilter = 0;
                 createPointsLayer();
