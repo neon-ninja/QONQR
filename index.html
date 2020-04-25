@@ -177,7 +177,7 @@
         }
 
         function createPointsLayer() {
-            console.log(data.length);
+            console.log(window.data.length);
             var data = window.data.filter(e => e.TotalCount >= window.countfilter && new Date(e.LastUpdateDateUtc.replace(" ", "T")) > window.timefilter && window.teamfilter.includes(e.ZoneControlState))
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
