@@ -296,12 +296,12 @@
                 createPointsLayer();
             } else if (this.value == "week") {
                 var lastweek = new Date()
-                lastweek.setDate(lastweek.getDate() - 7);
+                lastweek.setUTCDate(lastweek.getUTCDate() - 7);
                 window.timefilter = lastweek;
                 createPointsLayer();
             } else if (this.value == "day") {
                 var yesterday = new Date()
-                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setUTCDate(yesterday.getUTCDate() - 1);
                 window.timefilter = yesterday;
                 createPointsLayer();
             }
