@@ -178,7 +178,7 @@
 
         function createPointsLayer() {
             console.log(data.length);
-            var data = window.data.filter(e => e.TotalCount >= countfilter && new Date(e.LastUpdateDateUtc) > timefilter && teamfilter.includes(e.ZoneControlState))
+            var data = window.data.filter(e => e.TotalCount >= window.countfilter && new Date(e.LastUpdateDateUtc.replace(" ", "T")) > window.timefilter && window.teamfilter.includes(e.ZoneControlState))
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
@@ -253,7 +253,7 @@
                             skipEmptyLines: true,
                             complete: function (csv) {
                                 window.data = csv.data;
-                                createPointsLayer(data);
+                                createPointsLayer();
                                 updateStats();
                                 map.spin(false);
                             }
@@ -279,7 +279,7 @@
         };
         legend.addTo(map);
         window.countfilter = 0;
-        window.timefilter = 0;
+        window.timefilter = new Date(0);
         $("#filter").change(function() {
             window.countfilter = this.value;
             createPointsLayer();
