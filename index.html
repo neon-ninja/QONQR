@@ -7,13 +7,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
     <script src="https://raw.githack.com/robertleeplummerjr/Leaflet.glify/master/dist/glify-browser.js"></script>
     <script src="https://unpkg.com/leaflet-providers@1.3.0/leaflet-providers.js"></script>
     <script src="https://unpkg.com/jquery@3.3.1/dist/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.3.7/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
     <script src="https://unpkg.com/leaflet-spin@1.1.0/leaflet.spin.min.js"></script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-164777450-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-164777450-1');
+    </script>
+
     <style>
         body,
         html,
@@ -30,30 +39,39 @@
             background-color: rgba(0, 0, 0, 0.8);
             border-radius: 5px;
         }
+
         .uncaptured {
             color: orange;
         }
+
         .legion {
             color: red;
         }
+
         .swarm {
             color: green;
         }
+
         .faceless {
             color: purple;
         }
+
         .uncapturedBG {
             background-color: orange;
         }
+
         .legionBG {
             background-color: red;
         }
+
         .swarmBG {
             background-color: green;
         }
+
         .facelessBG {
             background-color: purple;
         }
+
         .link {
             text-decoration: underline;
             cursor: pointer;
@@ -74,10 +92,10 @@
         }
 
         const colours = {
-            0: {r:1, g:0.647, b:0},
-            1: {r:1, g:0, b:0},
-            2: {r:0, g:1, b:0},
-            3: {r:0.5, g:0, b:0.5}
+            0: { r: 1, g: 0.647, b: 0 },
+            1: { r: 1, g: 0, b: 0 },
+            2: { r: 0, g: 1, b: 0 },
+            3: { r: 0.5, g: 0, b: 0.5 }
         }
 
         var map = L.map('map', {
@@ -90,8 +108,8 @@
         map.locate({
             setView: true,
             maxZoom: 5
-        }).on("locationfound", function(e) {
-            L.circle([e.latitude, e.longitude], {color: "cyan", radius: e.accuracy}).bindTooltip("You").addTo(map);
+        }).on("locationfound", function (e) {
+            L.circle([e.latitude, e.longitude], { color: "cyan", radius: e.accuracy }).bindTooltip("You").addTo(map);
             var range_km = 1609.34;
             if (new Date().getUTCDay() == 1) { // Monday
                 var week = Math.floor(new Date().getUTCDate() / 7);
@@ -103,7 +121,7 @@
                     range_km = 20116.8;
                 }
             }
-            L.circle([e.latitude, e.longitude], {color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false}).addTo(map);
+            L.circle([e.latitude, e.longitude], { color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false }).addTo(map);
         });
 
         var baseMaps = {
@@ -136,12 +154,12 @@
         var layers = Object.keys(overlays);
 
         window.teamfilter = [0, 1, 2, 3];
-        map.on("overlayadd", function(e) {
+        map.on("overlayadd", function (e) {
             layers.push(e.name);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
             createPointsLayer();
-        }).on("overlayremove", function(e) {
+        }).on("overlayremove", function (e) {
             layers.splice(layers.indexOf(e.name), 1);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
@@ -168,8 +186,8 @@
             var className = zoneControlState[d.ZoneControlState]
             var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
                 "<br>Zone ID: " + d.ZoneId +
-                "<br>Captured: " + d.DateCapturedUtc.slice(0,19) +
-                "<br>Last updated: " + d.LastUpdateDateUtc.slice(0,19) +
+                "<br>Captured: " + d.DateCapturedUtc.slice(0, 19) +
+                "<br>Last updated: " + d.LastUpdateDateUtc.slice(0, 19) +
                 "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
                 "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
                 "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div>";
@@ -184,18 +202,18 @@
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
                 map: map,
-                size: function(i, e) {
+                size: function (i, e) {
                     return clamp(data[i].TotalCount / 1E6);
                 },
-                color: function(i, e) {
+                color: function (i, e) {
                     return colours[data[i].ZoneControlState]
                 },
                 click: function (e, feature) {
                     var i = points.indexOf(feature);
                     L.popup()
-                    .setLatLng(e.latlng)
-                    .setContent(buildDescString(data[i]))
-                    .openOn(map);
+                        .setLatLng(e.latlng)
+                        .setContent(buildDescString(data[i]))
+                        .openOn(map);
                 },
                 data: points
             });
@@ -213,7 +231,7 @@
                 "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
                 "</div><div>Total zones: " + data.length.toLocaleString() + "</div>");
             var sorted_data = data.filter(e => e.TotalDelta != undefined).sort((a, b) => a.TotalDelta < b.TotalDelta ? 1 : -1);
-            var top10 = sorted_data.slice(0,10);
+            var top10 = sorted_data.slice(0, 10);
             for (var i in top10) {
                 var d = top10[i];
                 var className = zoneControlState[d.ZoneControlState];
@@ -225,12 +243,12 @@
         }
 
         var baseUrl = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/";
-        map.spin(true, {color: "white"});
+        map.spin(true, { color: "white" });
         Papa.parse(baseUrl + "Countries.csv", {
             download: true,
             header: true,
             dynamicTyping: true,
-            complete: function(countries) {
+            complete: function (countries) {
                 window.countries = {}
                 for (var i in countries.data) {
                     var c = countries.data[i];
@@ -240,7 +258,7 @@
                     download: true,
                     header: true,
                     dynamicTyping: true,
-                    complete: function(regions) {
+                    complete: function (regions) {
                         window.regions = {}
                         for (var i in regions.data) {
                             var r = regions.data[i];
@@ -280,12 +298,12 @@
         legend.addTo(map);
         window.countfilter = 0;
         window.timefilter = new Date(0);
-        $("#filter").change(function() {
+        $("#filter").change(function () {
             window.countfilter = this.value;
             createPointsLayer();
         })
 
-        $("#filtertime").change(function() {
+        $("#filtertime").change(function () {
             if (this.value == "month") {
                 window.timefilter = new Date(0);
                 createPointsLayer();
