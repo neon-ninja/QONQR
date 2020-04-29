@@ -198,6 +198,7 @@
             console.log(window.data.length);
             if (window.countfilter == "contested") {
                 var data = window.data.filter(function(e) {
+                    if (e.ZoneControlState == 0) return false; // Uncaptured zones are by definition uncontested
                     if (e.ZoneControlState == 1 && e.TotalCount == e.LegionCount) return false; // A Legion held zone, where the total bot count is equal to the legion bot count, is uncontested
                     if (e.ZoneControlState == 2 && e.TotalCount == e.SwarmCount) return false;
                     if (e.ZoneControlState == 3 && e.TotalCount == e.FacelessCount) return false;
