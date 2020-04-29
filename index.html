@@ -196,7 +196,17 @@
 
         function createPointsLayer() {
             console.log(window.data.length);
-            var data = window.data.filter(e => e.TotalCount >= window.countfilter && new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter && window.teamfilter.includes(e.ZoneControlState))
+            if (window.countfilter == "contested") {
+                var data = window.data.filter(function(e) {
+                    if (e.ZoneControlState == 1 && e.TotalCount == e.LegionCount) return false; // A Legion held zone, where the total bot count is equal to the legion bot count, is uncontested
+                    if (e.ZoneControlState == 2 && e.TotalCount == e.SwarmCount) return false;
+                    if (e.ZoneControlState == 3 && e.TotalCount == e.FacelessCount) return false;
+                    return new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter && window.teamfilter.includes(e.ZoneControlState)
+                });
+                console.log(data);
+            } else {
+                var data = window.data.filter(e => e.TotalCount >= window.countfilter && new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter && window.teamfilter.includes(e.ZoneControlState))
+            }
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
@@ -290,7 +300,7 @@
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += 'Shows zones with activity in the past <select id="filtertime"><option>month</option><option>week</option><option>day</option></select>' +
-                "<br><select id='filter'><option value=0>Show all zones</option><option value=100000>Hide zones < 100K</option><option value=1000000>Hide zones < 1M</option><option value=10000000>Hide zones < 10M</option></select>" +
+                "<br><select id='filter'><option value=0>Show all zones</option><option value=100000>Hide zones < 100K</option><option value=1000000>Hide zones < 1M</option><option value=10000000>Hide zones < 10M</option><option value=contested>Hide uncontested zones</option></select>" +
                 "<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'><div id='top10'>Top 10 zones:</div></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             L.DomEvent.disableClickPropagation(div);
             return div;
