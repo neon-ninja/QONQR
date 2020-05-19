@@ -214,6 +214,14 @@
             }
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
+            var pointLookup = {}
+            for (var p of points) {
+                if (!pointLookup[p]) {
+                    pointLookup[p] = 1
+                } else {
+                    p[1] += .001;
+                }
+            }
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
                 map: map,
