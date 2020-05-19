@@ -228,19 +228,20 @@
                 },
                 data: points
             });
+            updateStats(data);
         }
 
-        function updateStats() {
+        function updateStats(data) {
             var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
             for (var d of data) {
                 totalLegion += d.LegionCount;
                 totalSwarm += d.SwarmCount;
                 totalFaceless += d.FacelessCount;
             }
-            $("#stats").prepend("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
+            $("#stats").html("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
                 "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
                 "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
-                "</div><div>Total zones: " + data.length.toLocaleString() + "</div>");
+                "</div><div>Total zones: " + data.length.toLocaleString() + "</div><div id='top10'>Top 10 zones:</div>");
             var sorted_data = data.filter(e => e.TotalDelta != undefined).sort((a, b) => a.TotalDelta < b.TotalDelta ? 1 : -1);
             var top10 = sorted_data.slice(0, 10);
             for (var i in top10) {
@@ -283,7 +284,6 @@
                             complete: function (csv) {
                                 window.data = csv.data;
                                 createPointsLayer();
-                                updateStats();
                                 map.spin(false);
                             }
                         });
@@ -300,9 +300,9 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += 'Shows zones with activity in the past <select id="filtertime"><option>month</option><option>week</option><option>day</option></select>' +
+            div.innerHTML += 'Shows zones with activity <select id="filtertime"><option>since 2020-03-16</option><option value="month">in the past month</option><option value="week">in the past week</option><option value="day">in the past day</option></select>' +
                 "<br><select id='filter'><option value=0>Show all zones</option><option value=100000>Hide zones < 100K</option><option value=1000000>Hide zones < 1M</option><option value=10000000>Hide zones < 10M</option><option value=contested>Hide uncontested zones</option></select>" +
-                "<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'><div id='top10'>Top 10 zones:</div></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
+                "<br><a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div> <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>";
             L.DomEvent.disableClickPropagation(div);
             return div;
         };
@@ -315,20 +315,17 @@
         })
 
         $("#filtertime").change(function () {
+            var date = new Date();
+            var timefilter = new Date(0);
             if (this.value == "month") {
-                window.timefilter = new Date(0);
-                createPointsLayer();
+                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, date.getUTCDate());
             } else if (this.value == "week") {
-                var date = new Date();
-                var lastweek = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 7);
-                window.timefilter = lastweek;
-                createPointsLayer();
+                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 7);
             } else if (this.value == "day") {
-                var date = new Date();
-                var yesterday = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1);
-                window.timefilter = yesterday;
-                createPointsLayer();
+                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1);
             }
+            window.timefilter = timefilter;
+            createPointsLayer();
         })
 
     </script>
