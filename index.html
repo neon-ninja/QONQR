@@ -112,7 +112,8 @@
                 callback(window.data);
             },
             propertyName: "Description",
-            propertyLoc: ["Latitude", "Longitude"]
+            propertyLoc: ["Latitude", "Longitude"],
+            marker: L.circleMarker([0,0], {color: "DeepSkyBlue", fillOpacity: 0})
         });
         map.addControl(search);
 
