@@ -14,6 +14,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.3.7/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
     <script src="https://unpkg.com/leaflet-spin@1.1.0/leaflet.spin.min.js"></script>
+    <script src="https://unpkg.com/leaflet-search@2.9.8/dist/leaflet-search.src.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.9.8/src/leaflet-search.css" />
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-164777450-1"></script>
     <script>
@@ -104,6 +106,15 @@
             maxBounds: [[-90, -360], [90, 360]],
             worldCopyJump: true
         });
+
+        var search = L.control.search({
+            sourceData: function(text, callback) {
+                callback(window.data);
+            },
+            propertyName: "Description",
+            propertyLoc: ["Latitude", "Longitude"]
+        });
+        map.addControl(search);
 
         map.locate({
             setView: true,
@@ -235,7 +246,8 @@
                         .setContent(buildDescString(data[i]))
                         .openOn(map);
                 },
-                data: points
+                data: points,
+                //fragmentShaderSource: L.glify.shader.fragment.simpleCircle
             });
             updateStats(data);
         }
