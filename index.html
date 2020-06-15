@@ -358,24 +358,53 @@
         };
         legend.addTo(map);
         window.countfilter = 0;
+        window.timefilterName = "since 2020-03-16";
         window.timefilter = new Date(0);
+
+        var urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.get("filter")) {
+            window.countfilter = urlParams.get("filter");
+            $("#filter").val(window.countfilter);
+        }
+
+        if (urlParams.get("timefilter")) {
+            window.timefilterName = urlParams.get("timefilter");
+            window.timefilter = getTimeFromName(window.timefilterName);
+            $("#filtertime").val(window.timefilterName);
+        }
+
+        function updateURL() {
+            urlParams.set("filter", window.countfilter);
+            urlParams.set("timefilter", window.timefilterName);
+            var newRelativePathQuery = window.location.pathname + '?' + urlParams.toString();
+            history.pushState(null, '', newRelativePathQuery);
+        }
+
         $("#filter").change(function () {
             window.countfilter = this.value;
             createPointsLayer();
+            updateURL();
         })
 
-        $("#filtertime").change(function () {
+        function getTimeFromName(name) {
             var date = new Date();
             var timefilter = new Date(0);
-            if (this.value == "month") {
+            if (name == "month") {
                 timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, date.getUTCDate());
-            } else if (this.value == "week") {
+            } else if (name == "week") {
                 timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 7);
-            } else if (this.value == "day") {
+            } else if (name == "day") {
                 timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1);
             }
-            window.timefilter = timefilter;
+            return timefilter;
+        }
+
+        $("#filtertime").change(function () {
+            window.timefilterName = this.value;
+            window.timefilter = getTimeFromName(window.timefilterName);
             createPointsLayer();
+            updateURL();
         })
 
     </script>
