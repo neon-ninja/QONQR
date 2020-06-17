@@ -168,14 +168,18 @@
 
         window.teamfilter = [0, 1, 2, 3];
         map.on("overlayadd", function (e) {
+            if (!window.data) return;
             layers.push(e.name);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
+            updateURL();
             createPointsLayer();
         }).on("overlayremove", function (e) {
+            if (!window.data) return;
             layers.splice(layers.indexOf(e.name), 1);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
+            updateURL();
             createPointsLayer();
         });
 
@@ -374,9 +378,23 @@
             $("#filtertime").val(window.timefilterName);
         }
 
+        if (urlParams.get("teamfilter")) {
+            layers = urlParams.get("teamfilter").split(",")
+            window.teamfilter = layers.map(e => Object.keys(overlays).indexOf(e));
+            for (var l of Object.keys(overlays)) {
+                if (layers.includes(l)) {
+                    overlays[l].addTo(map);
+                } else {
+                    overlays[l].removeFrom(map);
+                }
+            }
+            console.log(window.teamfilter)
+        }
+
         function updateURL() {
             urlParams.set("filter", window.countfilter);
             urlParams.set("timefilter", window.timefilterName);
+            urlParams.set("teamfilter", layers);
             var newRelativePathQuery = window.location.pathname + '?' + urlParams.toString();
             history.pushState(null, '', newRelativePathQuery);
         }
