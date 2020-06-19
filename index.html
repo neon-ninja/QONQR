@@ -343,7 +343,7 @@
                     <option>since 2020-03-16</option>
                     <option value="month">in the past month</option>
                     <option value="week">in the past week</option>
-                    <option value="day">in the past day</option>
+                    <option value="day" selected>in the past day</option>
                 </select><br>
                 <select id='filter'>
                     <option value=0>Show all zones</option>
@@ -363,8 +363,8 @@
         };
         legend.addTo(map);
         window.countfilter = 0;
-        window.timefilterName = "since 2020-03-16";
-        window.timefilter = new Date(0);
+        window.timefilterName = "day";
+        window.timefilter = getTimeFromName(window.timefilterName);
 
         var urlParams = new URLSearchParams(window.location.search);
 
