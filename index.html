@@ -315,12 +315,13 @@
                                 for (var d of window.data) {
                                     var p = [d.Latitude, d.Longitude]
                                     if (!pointLookup[p]) {
-                                        pointLookup[p] = d;
+                                        pointLookup[p] = [d];
                                     } else {
-                                        pointLookup[p].colocated = true;
-                                        pointLookup[p] = d;
-                                        d.Longitude += .001;
-                                        d.colocated = true;
+                                        d.Longitude += .001 * pointLookup[p].length;
+                                        pointLookup[p].push(d);
+                                        for (var zone of pointLookup[p]) {
+                                            zone.colocated = true;
+                                        }
                                     }
                                 }
                                 createPointsLayer();
