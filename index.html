@@ -17,6 +17,7 @@
     <script src="https://unpkg.com/leaflet-spin@1.1.0/leaflet.spin.min.js"></script>
     <script src="https://unpkg.com/leaflet-search@2.9.8/dist/leaflet-search.src.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.9.8/src/leaflet-search.css" />
+    <script src="https://nuclearsecrecy.github.io/Leaflet.greatCircle/Leaflet.greatCircle.js"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-164777450-1"></script>
     <script>
@@ -134,7 +135,7 @@
                     range_km = 20116.8;
                 }
             }
-            L.circle([e.latitude, e.longitude], { color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false }).addTo(map);
+            L.greatCircle([e.latitude, e.longitude], { color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false }).addTo(map);
         });
 
         var baseMaps = {
