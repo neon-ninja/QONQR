@@ -1,0 +1,123 @@
+<html>
+
+<head>
+    <title>QONQR zone map</title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="shortcut icon" href="https://qonqr.com/Images/favicon.ico/android-icon-192x192.png" />
+    <script src="https://unpkg.com/deck.gl@^8.2.0/dist.min.js"></script>
+    <script src="https://unpkg.com/@deck.gl/carto@^8.2.0/dist.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .uncaptured {
+            color: orange;
+        }
+
+        .legion {
+            color: red;
+        }
+
+        .swarm {
+            color: green;
+        }
+
+        .faceless {
+            color: purple;
+        }
+    </style>
+    <script>
+        const zoneControlState = {
+            0: "uncaptured",
+            1: "legion",
+            2: "swarm",
+            3: "faceless"
+        }
+
+        const colours = {
+            0: [255, 165, 0],
+            1: [255, 0, 0],
+            2: [0, 255, 0],
+            3: [127, 0, 127]
+        }
+
+        function clamp(num) {
+            var min = 10;
+            var max = 50;
+            return num <= min ? min : num >= max ? max : num;
+        }
+
+        function formatDelta(delta) {
+            if (!delta) {
+                return "";
+            } else if (delta >= 0) {
+                delta = "+" + delta.toLocaleString();
+            }
+            return " (" + delta.toLocaleString() + ")";
+        }
+
+        function buildDescString(d) {
+            var className = zoneControlState[d.ZoneControlState]
+            console.log(d)
+            var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
+                "<br>Zone ID: " + d.ZoneId +
+                "<br>Captured: " + (d.DateCapturedUtc ? d.DateCapturedUtc.slice(0, 19) : "") +
+                "<br>Last updated: " + d.LastUpdateDateUtc.slice(0, 19) +
+                "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
+                "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
+                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div>";
+            return desc;
+        }
+
+        Papa.parse('https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/monthly_unique_zones.csv', {
+            download: true,
+            dynamicTyping: true,
+            header: true,
+            complete: function (results) {
+                console.log(results)
+                new deck.DeckGL({
+                    mapStyle: deck.carto.BASEMAP.DARK_MATTER,
+                    initialViewState: {
+                        longitude: 0,
+                        latitude: 0,
+                        zoom: 1,
+                        pitch: 0
+                    },
+                    controller: true,
+                    getTooltip: ({ object }) => object && {
+                        html: buildDescString(object),
+                        style: {
+                            "background-color": "white",
+                            "color": "black"
+                        }
+                    },
+                    layers: [
+                        new deck.ScatterplotLayer({
+                            data: results.data,
+                            opacity: 0.5,
+                            autoHighlight: true,
+                            radiusScale: 100,
+                            radiusMinPixels: 1,
+                            wrapLongitude: true,
+                            getPosition: d => [d.Longitude, d.Latitude, d.TotalCount / 1E6],
+                            getColor: d => colours[d.ZoneControlState],
+                            pickable: true,
+                            getRadius: d => clamp(d.TotalCount / 1E6)
+                        })
+                    ]
+                })
+            }
+        });
+    </script>
+</head>
+
+</html>
