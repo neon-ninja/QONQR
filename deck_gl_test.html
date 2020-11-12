@@ -35,6 +35,10 @@
             color: purple;
         }
     </style>
+</head>
+
+<body>
+
     <script>
         const zoneControlState = {
             0: "uncaptured",
@@ -78,46 +82,83 @@
             return desc;
         }
 
+
+        var map = new deck.DeckGL({
+            mapStyle: deck.carto.BASEMAP.DARK_MATTER,
+            initialViewState: {
+                longitude: 0,
+                latitude: 0,
+                zoom: 1,
+                pitch: 0
+            },
+            controller: true,
+            getTooltip: ({ object }) => object && {
+                html: buildDescString(object),
+                style: {
+                    "background-color": "white",
+                    "color": "black"
+                }
+            },
+        });
+
+        var layers = []
+
+        navigator.geolocation.getCurrentPosition(function (result) {
+            console.log(result);
+            var lat = result.coords.latitude;
+            var lng = result.coords.longitude;
+            var accuracy = result.coords.accuracy;
+            var range_km = 1609.34;
+            if (new Date().getUTCDay() == 1) { // Monday
+                var week = Math.floor(new Date().getUTCDate() / 7);
+                if (week == 1) {
+                    range_km = 4828.032;
+                } else if (week == 2) {
+                    range_km = 9656.064;
+                } else if (week >= 3) {
+                    range_km = 20116.8;
+                }
+            }
+            var data = [
+                [lng, lat, accuracy],
+                [lng, lat, range_km * 1000]
+            ]
+            layers.push(new deck.ScatterplotLayer({
+                id: "user-radius",
+                data: data,
+                getPosition: d => [d[0], d[1]],
+                getRadius: d => d[2],
+                filled: false,
+                stroked: true,
+                lineWidthMinPixels: 3,
+                getLineColor: [0, 255, 255]
+            }));
+            map.setProps({ layers: [...layers] });
+        })
+
         Papa.parse('https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/monthly_unique_zones.csv', {
             download: true,
             dynamicTyping: true,
             header: true,
             complete: function (results) {
                 console.log(results)
-                new deck.DeckGL({
-                    mapStyle: deck.carto.BASEMAP.DARK_MATTER,
-                    initialViewState: {
-                        longitude: 0,
-                        latitude: 0,
-                        zoom: 1,
-                        pitch: 0
-                    },
-                    controller: true,
-                    getTooltip: ({ object }) => object && {
-                        html: buildDescString(object),
-                        style: {
-                            "background-color": "white",
-                            "color": "black"
-                        }
-                    },
-                    layers: [
-                        new deck.ScatterplotLayer({
-                            data: results.data,
-                            opacity: 0.5,
-                            autoHighlight: true,
-                            radiusScale: 100,
-                            radiusMinPixels: 1,
-                            wrapLongitude: true,
-                            getPosition: d => [d.Longitude, d.Latitude, d.TotalCount / 1E6],
-                            getColor: d => colours[d.ZoneControlState],
-                            pickable: true,
-                            getRadius: d => clamp(d.TotalCount / 1E6)
-                        })
-                    ]
-                })
+                layers.push(new deck.ScatterplotLayer({
+                    id: "qonqr-zones",
+                    data: results.data,
+                    opacity: 0.5,
+                    autoHighlight: true,
+                    radiusScale: 10,
+                    radiusMinPixels: 1,
+                    wrapLongitude: true,
+                    getPosition: d => [d.Longitude, d.Latitude, d.TotalCount / 1E6],
+                    getFillColor: d => colours[d.ZoneControlState],
+                    pickable: true,
+                    getRadius: d => clamp(d.TotalCount / 1E6)
+                }))
+                map.setProps({ layers: [...layers] });
             }
         });
     </script>
-</head>
+</body>
 
 </html>
