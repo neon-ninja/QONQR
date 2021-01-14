@@ -156,11 +156,32 @@
         var swarm = L.layerGroup().addTo(map);
         var faceless = L.layerGroup().addTo(map);
 
+        map.createPane('labels');
+        map.getPane('labels').style.zIndex = 625;
+        map.getPane('labels').style.pointerEvents = 'none';
+        var labels = L.tileLayer.provider("Stamen.TonerLabels", {
+            pane: "labels",
+            interactive: false,
+            opacity: .8,
+        });
+
+        map.createPane('whitelabels');
+        map.getPane('whitelabels').style.zIndex = 625;
+        map.getPane('whitelabels').style.pointerEvents = 'none';
+        map.getPane('whitelabels').style.filter = 'invert(100%)';
+        var whitelabels = L.tileLayer.provider("Stamen.TonerLabels", {
+            pane: "whitelabels",
+            interactive: false,
+            opacity: .8,
+        });
+
         var overlays = {
             "Uncaptured": uncaptured,
             "Legion": legion,
             "Swarm": swarm,
             "Faceless": faceless,
+            "City labels": labels,
+            "City labels (white)": whitelabels,
         }
 
         L.control.layers(baseMaps, overlays).addTo(map);
