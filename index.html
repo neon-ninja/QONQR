@@ -109,12 +109,20 @@
             worldCopyJump: true
         });
 
+        var sql = `SELECT CONCAT(z.Description, ",", r.Description, ",", c.Description) AS Description, Latitude, Longitude FROM zones z
+            INNER JOIN countries c ON z.countryid=c.countryid
+            INNER JOIN regions r ON z.regionid=r.regionid
+            WHERE z.Description LIKE '%25{s}%25' OR z.ZoneId="{s}"
+        `;
         var search = L.control.search({
-            sourceData: function(text, callback) {
-                callback(window.data);
+            url: "https://api-proxy.auckland-cer.cloud.edu.au/QONQR/" + sql,
+            formatData: function (data) {
+                var lookup = [];
+                for (var zone of data.results) {
+                    lookup[zone.Description] = [zone.Latitude, zone.Longitude]
+                }
+                return lookup;
             },
-            propertyName: "Description",
-            propertyLoc: ["Latitude", "Longitude"],
             marker: L.circleMarker([0,0], {color: "DeepSkyBlue", fillOpacity: 0})
         });
         map.addControl(search);
