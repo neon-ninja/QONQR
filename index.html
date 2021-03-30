@@ -195,14 +195,14 @@
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
             updateURL();
-            createPointsLayer();
+            query();
         }).on("overlayremove", function (e) {
             if (!window.data) return;
             layers.splice(layers.indexOf(e.name), 1);
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
             updateURL();
-            createPointsLayer();
+            query();
         });
 
 
@@ -235,28 +235,6 @@
 
         function createPointsLayer() {
             console.log(window.data.length);
-            if (window.countfilter == "contested") {
-                var data = window.data.filter(function(e) {
-                    if (e.ZoneControlState == 0) return false; // Uncaptured zones are by definition uncontested
-                    // A Legion held zone, where the total bot count is equal to the legion bot count, is uncontested
-                    if (e.ZoneControlState == 1 && e.TotalCount == e.LegionCount) return false;
-                    if (e.ZoneControlState == 2 && e.TotalCount == e.SwarmCount) return false;
-                    if (e.ZoneControlState == 3 && e.TotalCount == e.FacelessCount) return false;
-                    return new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter && window.teamfilter.includes(e.ZoneControlState)
-                });
-                console.log(data);
-            } else if (window.countfilter == "colocated") {
-                var data = window.data.filter(e => e.colocated &&
-                    new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter &&
-                    window.teamfilter.includes(e.ZoneControlState)
-                )
-            } else {
-                var data = window.data.filter(e => e.TotalCount >= window.countfilter &&
-                    new Date(e.LastUpdateDateUtc.replace(" ", "T") + "Z") > window.timefilter &&
-                    window.teamfilter.includes(e.ZoneControlState)
-                )
-            }
-            console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
@@ -278,7 +256,6 @@
                 opacity: 1,
                 //fragmentShaderSource: L.glify.shader.fragment.simpleCircle
             });
-            updateStats(data);
         }
 
         function updateStats(data) {
@@ -297,62 +274,79 @@
             for (var i in top10) {
                 var d = top10[i];
                 var className = zoneControlState[d.ZoneControlState];
-                var country = countries[d.CountryId].Description;
-                var region = regions[d.RegionId].description;
                 $("#top10").append("<div onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='link " +
                     className + "'>" + d.Description + ", " + region + ", " + country + "</div>")
             }
         }
 
-        var baseUrl = "https://raw.githubusercontent.com/neon-ninja/QONQR_zonedata/master/data/";
-        map.spin(true, { color: "white" });
-        Papa.parse(baseUrl + "Countries.csv", {
-            download: true,
-            header: true,
-            dynamicTyping: true,
-            complete: function (countries) {
-                window.countries = {}
-                for (var i in countries.data) {
-                    var c = countries.data[i];
-                    window.countries[c.countryid] = c;
-                }
-                Papa.parse(baseUrl + "Regions.csv", {
-                    download: true,
-                    header: true,
-                    dynamicTyping: true,
-                    complete: function (regions) {
-                        window.regions = {}
-                        for (var i in regions.data) {
-                            var r = regions.data[i];
-                            window.regions[r.regionid] = r;
-                        }
-                        Papa.parse(baseUrl + "monthly_unique_zones.csv", {
-                            download: true,
-                            header: true,
-                            dynamicTyping: true,
-                            skipEmptyLines: true,
-                            complete: function (csv) {
-                                window.data = csv.data;
-                                var pointLookup = {}
-                                for (var d of window.data) {
-                                    var p = [d.Latitude, d.Longitude]
-                                    if (!pointLookup[p]) {
-                                        pointLookup[p] = [d];
-                                    } else {
-                                        d.Longitude += .001 * pointLookup[p].length;
-                                        pointLookup[p].push(d);
-                                        for (var zone of pointLookup[p]) {
-                                            zone.colocated = true;
-                                        }
-                                    }
-                                }
-                                createPointsLayer();
-                                map.spin(false);
-                            }
-                        });
-                    }
-                });
+        function getBoundsQueryFragment() {
+            var bounds = map.getBounds()
+            return `Latitude BETWEEN ${bounds.getSouth()} AND ${bounds.getNorth()} AND Longitude BETWEEN ${bounds.getWest()} AND ${bounds.getEast()}`
+        }
+
+        function getCountQueryFragment() {
+            return `TotalCount > ${window.countfilter}`
+        }
+
+        function getTimeQueryFragment() {
+            if (window.timefilter != "all") {
+                return `LastUpdateDateUtc > date_sub(UTC_DATE(), interval 1 ${window.timefilter})`
+            } else {
+                return 1
             }
+        }
+
+        function getTeamFilterQueryFragment() {
+            return `ZoneControlState IN (${window.teamfilter.join(",")})`
+        }
+
+        function query() {
+            if (!ws.readyState) return;
+            if (window.pending) return;
+            window.pending = true;
+            map.spin(true, {color: "white"});
+            ws.send(`SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta
+            FROM zones
+            WHERE ${getBoundsQueryFragment()}
+            AND ${getCountQueryFragment()}
+            AND ${getTimeQueryFragment()}
+            AND ${getTeamFilterQueryFragment()}
+            ORDER BY TotalCount DESC
+            LIMIT 10000`)
+        }
+
+        window.ws = new WebSocket("wss://api-proxy.auckland-cer.cloud.edu.au/QONQR/websocket");
+        window.pending = false;
+        ws.onopen = function() {
+            query();
+        }
+        ws.onmessage = function (evt) {
+            window.pending = false;
+            var data = JSON.parse(evt.data);
+            if (data.results.error) {
+                console.error(data.results.error)
+            }
+            console.log(data.results);
+            window.data = data.results;
+            // Check colocation
+            var pointLookup = {}
+            for (var d of window.data) {
+                var p = [d.Latitude, d.Longitude]
+                if (!pointLookup[p]) {
+                    pointLookup[p] = [d];
+                } else {
+                    d.Longitude += .001 * pointLookup[p].length;
+                    pointLookup[p].push(d);
+                    for (var zone of pointLookup[p]) {
+                        zone.colocated = true;
+                    }
+                }
+            }
+            createPointsLayer()
+            map.spin(false);
+        }
+        map.on('moveend', function(e) {
+            query();
         });
 
         var legend = L.control({ position: 'bottomright' });
@@ -364,7 +358,7 @@
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += `Shows zones with activity <select id="filtertime">
-                    <option>since 2021-01-01</option>
+                    <option value="all">All time</option>
                     <option value="month">in the past month</option>
                     <option value="week">in the past week</option>
                     <option value="day" selected>in the past day</option>
@@ -380,15 +374,15 @@
                     <option value=contested>Show contested zones</option>
                     <option value=colocated>Show colocated zones</option>
                 </select><br>
-                <a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>
+                <!--<a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>-->
                 <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>`;
             L.DomEvent.disableClickPropagation(div);
             return div;
         };
         legend.addTo(map);
         window.countfilter = 0;
-        window.timefilterName = "day";
-        window.timefilter = getTimeFromName(window.timefilterName);
+        window.timefilter = "day";
+        window.timefilter = window.timefilter;
 
         var urlParams = new URLSearchParams(window.location.search);
 
@@ -399,8 +393,8 @@
 
         if (urlParams.get("timefilter")) {
             window.timefilterName = urlParams.get("timefilter");
-            window.timefilter = getTimeFromName(window.timefilterName);
-            $("#filtertime").val(window.timefilterName);
+            window.timefilter = window.timefilter;
+            $("#filtertime").val(window.timefilter);
         }
 
         if (urlParams.get("teamfilter")) {
@@ -418,7 +412,7 @@
 
         function updateURL() {
             urlParams.set("filter", window.countfilter);
-            urlParams.set("timefilter", window.timefilterName);
+            urlParams.set("timefilter", window.timefilter);
             urlParams.set("teamfilter", layers);
             var newRelativePathQuery = window.location.pathname + '?' + urlParams.toString();
             history.pushState(null, '', newRelativePathQuery);
@@ -426,27 +420,13 @@
 
         $("#filter").change(function () {
             window.countfilter = this.value;
-            createPointsLayer();
+            query();
             updateURL();
         })
 
-        function getTimeFromName(name) {
-            var date = new Date();
-            var timefilter = new Date(0);
-            if (name == "month") {
-                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, date.getUTCDate());
-            } else if (name == "week") {
-                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 7);
-            } else if (name == "day") {
-                timefilter = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1);
-            }
-            return timefilter;
-        }
-
         $("#filtertime").change(function () {
-            window.timefilterName = this.value;
-            window.timefilter = getTimeFromName(window.timefilterName);
-            createPointsLayer();
+            window.timefilter = this.value;
+            query();
             updateURL();
         })
 
