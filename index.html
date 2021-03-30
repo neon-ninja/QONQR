@@ -304,6 +304,8 @@
             return `ZoneControlState IN (${window.teamfilter.join(",")})`
         }
 
+        window.limit = 100000
+
         function query() {
             if (!ws.readyState) return;
             if (window.pending) return;
@@ -316,7 +318,7 @@
             AND ${getTimeQueryFragment()}
             AND ${getTeamFilterQueryFragment()}
             ORDER BY TotalCount DESC
-            LIMIT 10000`)
+            LIMIT ${limit}`)
         }
 
         window.ws = new WebSocket("wss://api-proxy.auckland-cer.cloud.edu.au/QONQR/websocket");
@@ -331,6 +333,11 @@
                 console.error(data.results.error)
             }
             console.log(data.results);
+            if (data.results.length == limit) {
+                $("#max_zone_warning").show()
+            } else {
+                $("#max_zone_warning").hide()
+            }
             window.data = data.results;
             // Check colocation
             var pointLookup = {}
@@ -379,6 +386,7 @@
                     <option value=colocated>Show colocated zones</option>
                 </select><br>
                 <!--<a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>-->
+                <div id="max_zone_warning" style="display:none">Warning: Limit of 100K zones shown. Zoom in to see more</div>
                 <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>`;
             L.DomEvent.disableClickPropagation(div);
             return div;
