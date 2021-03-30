@@ -365,9 +365,9 @@
             }
             console.log(data.results);
             if (data.results.length == limit) {
-                $("#max_zone_warning").show()
+                $("#zones_shown").text("Warning: Limit of 100K zones shown. Zoom in to see more");
             } else {
-                $("#max_zone_warning").hide()
+                $("#zones_shown").text(data.results.length + " zones shown");
             }
             window.data = data.results;
             // Check colocation
@@ -424,7 +424,7 @@
                     <option value=colocated>Show colocated zones</option>
                 </select><br>
                 <!--<a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>-->
-                <div id="max_zone_warning" style="display:none">Warning: Limit of 100K zones shown. Zoom in to see more</div>
+                <div id="zones_shown">0 zones shown</div>
                 <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>`;
             L.DomEvent.disableClickPropagation(div);
             return div;
