@@ -247,10 +247,14 @@
                 },
                 click: function (e, feature) {
                     var i = points.indexOf(feature);
-                    L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(buildDescString(data[i]))
-                        .openOn(map);
+                    sql = "SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta FROM zones WHERE zoneId=" + data[i].ZoneId;
+                    $.getJSON("https://api-proxy.auckland-cer.cloud.edu.au/QONQR/" + sql, function(data) {
+                        console.log(data);
+                        L.popup()
+                            .setLatLng(e.latlng)
+                            .setContent(buildDescString(data.results[0]))
+                            .openOn(map);
+                    })
                 },
                 data: points,
                 opacity: 1,
@@ -285,7 +289,7 @@
         }
 
         function getCountQueryFragment() {
-            return `TotalCount > ${window.countfilter}`
+            return `TotalCount >= ${window.countfilter}`
         }
 
         function getTimeQueryFragment() {
@@ -305,7 +309,7 @@
             if (window.pending) return;
             window.pending = true;
             map.spin(true, {color: "white"});
-            ws.send(`SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta
+            ws.send(`SELECT ZoneId,ZoneControlState,Latitude,Longitude,TotalCount
             FROM zones
             WHERE ${getBoundsQueryFragment()}
             AND ${getCountQueryFragment()}
