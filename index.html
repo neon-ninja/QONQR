@@ -112,7 +112,7 @@
         var sql = `SELECT CONCAT(z.Description, ",", r.Description, ",", c.Description) AS Description, Latitude, Longitude FROM zones z
             INNER JOIN countries c ON z.countryid=c.countryid
             INNER JOIN regions r ON z.regionid=r.regionid
-            WHERE z.Description LIKE '%25{s}%25' OR z.ZoneId="{s}"
+            WHERE MATCH (z.DESCRIPTION) AGAINST ("{s}") OR z.ZoneId="{s}"
         `;
 
         const API_BASE_URL = "https://api-proxy.auckland-cer.cloud.edu.au/QONQR/"
@@ -318,7 +318,11 @@
 
         function getTimeQueryFragment() {
             if (window.timefilter != "all") {
-                return `LastUpdateDateUtc > date_sub(UTC_DATE(), interval 1 ${window.timefilter})`
+                if (window.timefilter.charAt(0) == ">") {
+                    return `LastUpdateDateUtc < date_sub(UTC_DATE(), interval ${window.timefilter.slice(1)})`
+                } else {
+                    return `LastUpdateDateUtc > date_sub(UTC_DATE(), interval ${window.timefilter})`
+                }
             } else {
                 return 1
             }
@@ -335,14 +339,16 @@
             if (window.pending) return;
             window.pending = true;
             map.spin(true, {color: "white"});
-            ws.send(`SELECT ZoneId,ZoneControlState,Latitude,Longitude,TotalCount
-            FROM zones
-            WHERE ${getBoundsQueryFragment()}
-            AND ${getCountQueryFragment()}
-            AND ${getTimeQueryFragment()}
-            AND ${getTeamFilterQueryFragment()}
-            ORDER BY TotalCount DESC
-            LIMIT ${limit}`)
+            var sql = `SELECT ZoneId,ZoneControlState,Latitude,Longitude,TotalCount
+                        FROM zones
+                        WHERE ${getBoundsQueryFragment()}
+                        AND ${getCountQueryFragment()}
+                        AND ${getTimeQueryFragment()}
+                        AND ${getTeamFilterQueryFragment()}
+                        ORDER BY TotalCount DESC
+                        LIMIT ${limit}`;
+            console.log(sql);
+            ws.send(sql)
         }
 
         window.ws = new WebSocket(WSURL);
@@ -352,6 +358,7 @@
         }
         ws.onmessage = function (evt) {
             window.pending = false;
+            map.spin(false);
             var data = JSON.parse(evt.data);
             if (data.results.error) {
                 console.error(data.results.error)
@@ -378,7 +385,6 @@
                 }
             }
             createPointsLayer()
-            map.spin(false);
         }
         map.on('moveend', function(e) {
             query();
@@ -394,9 +400,17 @@
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += `Shows zones with activity <select id="filtertime">
                     <option value="all">All time</option>
-                    <option value="month">in the past month</option>
-                    <option value="week">in the past week</option>
-                    <option value="day" selected>in the past day</option>
+                    <option value=">6 year">more than 6 years ago</option>
+                    <option value=">5 year">more than 5 years ago</option>
+                    <option value=">4 year">more than 4 years ago</option>
+                    <option value=">3 year">more than 3 years ago</option>
+                    <option value=">2 year">more than 2 years ago</option>
+                    <option value=">1 year">more than 1 year ago</option>
+                    <option value="2 year">in the past 2 years</option>
+                    <option value="1 year">in the past year</option>
+                    <option value="1 month">in the past month</option>
+                    <option value="1 week">in the past week</option>
+                    <option value="1 day" selected>in the past day</option>
                 </select><br>
                 <select id='filter'>
                     <option value=0>Show all zones</option>
@@ -417,7 +431,7 @@
         };
         legend.addTo(map);
         window.countfilter = 0;
-        window.timefilter = "day";
+        window.timefilter = "1 day";
 
         var urlParams = new URLSearchParams(window.location.search);
 
