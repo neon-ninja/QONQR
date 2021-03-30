@@ -276,24 +276,42 @@
         }
 
         function updateStats(data) {
-            var totalLegion = 0, totalSwarm = 0, totalFaceless = 0;
-            for (var d of data) {
-                totalLegion += d.LegionCount;
-                totalSwarm += d.SwarmCount;
-                totalFaceless += d.FacelessCount;
-            }
-            $("#stats").html("<div class='legion'>Total Legion bots:" + totalLegion.toLocaleString() +
-                "</div><div class='swarm'>Total Swarm bots: " + totalSwarm.toLocaleString() +
-                "</div><div class='faceless'>Total Faceless bots: " + totalFaceless.toLocaleString() +
-                "</div><div>Total zones: " + data.length.toLocaleString() + "</div><div id='top10'>Top 10 zones:</div>");
-            var sorted_data = data.filter(e => e.TotalDelta != undefined).sort((a, b) => a.TotalDelta < b.TotalDelta ? 1 : -1);
-            var top10 = sorted_data.slice(0, 10);
-            for (var i in top10) {
-                var d = top10[i];
-                var className = zoneControlState[d.ZoneControlState];
-                $("#top10").append("<div onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='link " +
-                    className + "'>" + d.Description + ", " + region + ", " + country + "</div>")
-            }
+            if (!$("#stats:visible")) return;
+            var sql = `SELECT SUM(LegionCount) AS LC, SUM(SwarmCount) AS SC, SUM(FacelessCount) AS FC
+                        FROM zones
+                        WHERE ${getBoundsQueryFragment()}
+                        AND ${getCountQueryFragment()}
+                        AND ${getTimeQueryFragment()}
+                        AND ${getTeamFilterQueryFragment()}
+            `;
+            console.log(sql)
+            $.getJSON(API_BASE_URL + encodeURIComponent(sql), function(stats) {
+                console.log(stats);
+                var r = stats.results[0];
+                $("#stats").html("<div class='legion'>Total Legion bots:" + parseInt(r.LC).toLocaleString() +
+                "</div><div class='swarm'>Total Swarm bots: " + parseInt(r.SC).toLocaleString() +
+                "</div><div class='faceless'>Total Faceless bots: " + parseInt(r.FC).toLocaleString() +
+                "</div><div id='top10'>Top 10 zones:</div>");
+                var sql = `SELECT CONCAT(z.Description, ",", r.Description, ",", c.Description) AS Description, Latitude, Longitude, ZoneControlState FROM zones z
+                            INNER JOIN countries c ON z.countryid=c.countryid
+                            INNER JOIN regions r ON z.regionid=r.regionid
+                            WHERE ${getBoundsQueryFragment()}
+                            AND ${getCountQueryFragment()}
+                            AND ${getTimeQueryFragment()}
+                            AND ${getTeamFilterQueryFragment()}
+                            ORDER BY TotalDelta DESC
+                            LIMIT 10
+                `;
+                console.log(sql);
+                $.getJSON(API_BASE_URL + encodeURIComponent(sql), function(top10) {
+                    console.log(top10)
+                    for (var d of top10.results) {
+                        var className = zoneControlState[d.ZoneControlState];
+                        $("#top10").append("<div onclick='map.flyTo([" + d.Latitude + "," + d.Longitude + "], 12)' class='link " +
+                            className + "'>" + d.Description + "</div>")
+                    }
+                });
+            })
         }
 
         function getBoundsQueryFragment() {
@@ -367,7 +385,7 @@
             if (data.results.length == limit) {
                 $("#zones_shown").text("Warning: Limit of 100K zones shown. Zoom in to see more");
             } else {
-                $("#zones_shown").text(data.results.length + " zones shown");
+                $("#zones_shown").text(data.results.length.toLocaleString() + " zones shown");
             }
             window.data = data.results;
             // Check colocation
@@ -385,6 +403,7 @@
                 }
             }
             createPointsLayer()
+            updateStats();
         }
         map.on('moveend', function(e) {
             query();
@@ -394,6 +413,7 @@
 
         function statsToggle() {
             $("#stats").toggle();
+            updateStats();
         }
 
         legend.onAdd = function (map) {
@@ -423,7 +443,7 @@
                     <option value=contested>Show contested zones</option>
                     <option value=colocated>Show colocated zones</option>
                 </select><br>
-                <!--<a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>-->
+                <a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>
                 <div id="zones_shown">0 zones shown</div>
                 <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>`;
             L.DomEvent.disableClickPropagation(div);
