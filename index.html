@@ -114,8 +114,12 @@
             INNER JOIN regions r ON z.regionid=r.regionid
             WHERE z.Description LIKE '%25{s}%25' OR z.ZoneId="{s}"
         `;
+
+        const API_BASE_URL = "https://api-proxy.auckland-cer.cloud.edu.au/QONQR/"
+        const WSURL = "wss://api-proxy.auckland-cer.cloud.edu.au/QONQR/websocket"
+
         var search = L.control.search({
-            url: "https://api-proxy.auckland-cer.cloud.edu.au/QONQR/" + sql,
+            url: API_BASE_URL + sql,
             formatData: function (data) {
                 var lookup = [];
                 for (var zone of data.results) {
@@ -194,7 +198,8 @@
 
         L.control.layers(baseMaps, overlays).addTo(map);
 
-        var layers = Object.keys(overlays);
+        var layers = Object.keys(overlays).slice(0,4);
+        console.log(layers);
 
         window.teamfilter = [0, 1, 2, 3];
         map.on("overlayadd", function (e) {
@@ -256,7 +261,7 @@
                 click: function (e, feature) {
                     var i = points.indexOf(feature);
                     sql = "SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta FROM zones WHERE zoneId=" + data[i].ZoneId;
-                    $.getJSON("https://api-proxy.auckland-cer.cloud.edu.au/QONQR/" + sql, function(data) {
+                    $.getJSON(API_BASE_URL + sql, function(data) {
                         console.log(data);
                         L.popup()
                             .setLatLng(e.latlng)
@@ -297,7 +302,18 @@
         }
 
         function getCountQueryFragment() {
-            return `TotalCount >= ${window.countfilter}`
+            if (window.countfilter == "contested") {
+                // Uncaptured zones are by definition uncontested
+                // A Legion held zone, where the total bot count is equal to the legion bot count, is uncontested
+                return `IF (ZoneControlState = 1 AND TotalCount != LegionCount OR
+                            ZoneControlState = 2 AND TotalCount != SwarmCount OR
+                            ZoneControlState = 3 AND TotalCount != FacelessCount
+                        , 1, 0)`;
+            } else if (window.countfilter == "colocated") {
+                return `Colocated = 1`
+            } else {
+                return `TotalCount >= ${window.countfilter}`
+            }
         }
 
         function getTimeQueryFragment() {
@@ -329,7 +345,7 @@
             LIMIT ${limit}`)
         }
 
-        window.ws = new WebSocket("wss://api-proxy.auckland-cer.cloud.edu.au/QONQR/websocket");
+        window.ws = new WebSocket(WSURL);
         window.pending = false;
         ws.onopen = function() {
             query();
@@ -402,7 +418,6 @@
         legend.addTo(map);
         window.countfilter = 0;
         window.timefilter = "day";
-        window.timefilter = window.timefilter;
 
         var urlParams = new URLSearchParams(window.location.search);
 
