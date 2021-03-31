@@ -202,6 +202,7 @@
         console.log(layers);
 
         window.teamfilter = [0, 1, 2, 3];
+        window.data = {};
         map.on("overlayadd", function (e) {
             if (!window.data) return;
             layers.push(e.name);
@@ -215,6 +216,7 @@
             var indices = layers.map(e => Object.keys(overlays).indexOf(e));
             window.teamfilter = indices;
             updateURL();
+            window.data = {}
             query();
         });
 
@@ -247,7 +249,8 @@
         }
 
         function createPointsLayer() {
-            console.log(window.data.length);
+            var data = Object.values(window.data)
+            console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
             window.pointsLayer = L.glify.points({
@@ -393,15 +396,13 @@
                 console.error(data.results.error)
             }
             console.log(data.results);
-            if (data.results.length == limit) {
-                $("#zones_shown").text("Warning: Limit of 100K zones shown. Zoom in to see more");
-            } else {
-                $("#zones_shown").text(data.results.length.toLocaleString() + " zones shown");
+            for (var zone of data.results) {
+                window.data[zone.ZoneId] = zone;
             }
-            window.data = data.results;
+            $("#zones_shown").text(Object.values(window.data).length.toLocaleString() + " zones shown");
             // Check colocation
             var pointLookup = {}
-            for (var d of window.data) {
+            for (var d of Object.values(window.data)) {
                 var p = [d.Latitude, d.Longitude]
                 if (!pointLookup[p]) {
                     pointLookup[p] = [d];
@@ -508,18 +509,21 @@
 
         $("#filter").change(function () {
             window.countfilter = this.value;
+            window.data = {}
             query();
             updateURL();
         })
 
         $("#filtertime").change(function () {
             window.timefilter = this.value;
+            window.data = {}
             query();
             updateURL();
         })
 
         $("#filterplayer").change(function() {
             window.playerfilter = this.value;
+            window.data = {}
             query();
             updateURL();
         })
