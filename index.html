@@ -499,7 +499,9 @@
             urlParams.set("filter", window.countfilter);
             urlParams.set("timefilter", window.timefilter);
             urlParams.set("teamfilter", layers);
-            urlParams.set("playerfilter", window.playerfilter)
+            if (window.playerfilter) {
+                urlParams.set("playerfilter", window.playerfilter)
+            }
             var newRelativePathQuery = window.location.pathname + '?' + urlParams.toString();
             history.pushState(null, '', newRelativePathQuery);
         }
