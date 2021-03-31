@@ -352,7 +352,11 @@
         }
 
         function getTeamFilterQueryFragment() {
-            return `ZoneControlState IN (${window.teamfilter.join(",")})`
+            if (window.teamfilter.length) {
+                return `ZoneControlState IN (${window.teamfilter.join(",")})`
+            } else {
+                return 0
+            }
         }
 
         function getPlayerFilterQueryFragment() {
