@@ -276,7 +276,7 @@
         }
 
         function updateStats(data) {
-            if (!$("#stats:visible")) return;
+            if (!$("#stats:visible").length) return;
             var sql = `SELECT SUM(LegionCount) AS LC, SUM(SwarmCount) AS SC, SUM(FacelessCount) AS FC
                         FROM zones
                         WHERE ${getBoundsQueryFragment()}
