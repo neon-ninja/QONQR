@@ -269,7 +269,8 @@
                     $.getJSON(API_BASE_URL + sql, function(data) {
                         console.log(data);
                         var point = e.latlng;
-                        L.popup({minWidth: 800})
+                        var best_width = Math.min($(window).width() - 100, 800)
+                        L.popup({minWidth: best_width, maxHeight: 500})
                             .setLatLng(point)
                             .setContent(buildDescString(data.results[0]))
                             .on("add", function(e) {
