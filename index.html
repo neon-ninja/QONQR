@@ -18,6 +18,7 @@
     <script src="https://unpkg.com/leaflet-search@2.9.8/dist/leaflet-search.src.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.9.8/src/leaflet-search.css" />
     <script src="https://nuclearsecrecy.github.io/Leaflet.greatCircle/Leaflet.greatCircle.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-164777450-1"></script>
     <script>
@@ -244,7 +245,7 @@
                 "<br>Last updated: " + d.LastUpdateDateUtc.slice(0, 19) +
                 "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
                 "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
-                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div>";
+                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div><div id='plot'></div>";
             return desc;
         }
 
@@ -263,12 +264,59 @@
                 },
                 click: function (e, feature) {
                     var i = points.indexOf(feature);
-                    sql = "SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta FROM zones WHERE zoneId=" + data[i].ZoneId;
+                    var zoneId = data[i].ZoneId;
+                    sql = "SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta FROM zones WHERE zoneId=" + zoneId;
                     $.getJSON(API_BASE_URL + sql, function(data) {
                         console.log(data);
-                        L.popup()
-                            .setLatLng(e.latlng)
+                        var point = e.latlng;
+                        L.popup({minWidth: 800})
+                            .setLatLng(point)
                             .setContent(buildDescString(data.results[0]))
+                            .on("add", function(e) {
+                                var px = map.project(point);
+                                console.log(px)
+                                px.y -= 400;
+                                map.panTo(map.unproject(px),{animate: true});
+                                sql = "SELECT * FROM changelog WHERE zoneId=" + zoneId;
+                                $.getJSON(API_BASE_URL + sql, function(data) {
+                                    console.log(data);
+                                    var timestamps = data.results.map(r => r.LastUpdateDateUtc)
+                                    var legion = {
+                                        name: "Legion",
+                                        x: timestamps,
+                                        y: data.results.map(r => r.LegionCount),
+                                        type: 'scatter',
+                                        mode: 'lines+markers',
+                                        marker: {
+                                            color: "rgb(255, 0, 0)",
+                                        },
+                                    };
+                                    var swarm = {
+                                        name: "Swarm",
+                                        x: timestamps,
+                                        y: data.results.map(r => r.SwarmCount),
+                                        type: 'scatter',
+                                        mode: 'lines+markers',
+                                        marker: {
+                                            color: "rgb(0, 255, 0)",
+                                        },
+                                    };
+                                    var faceless = {
+                                        name: "Faceless",
+                                        x: timestamps,
+                                        y: data.results.map(r => r.FacelessCount),
+                                        type: 'scatter',
+                                        mode: 'lines+markers',
+                                        marker: {
+                                            color: "rgb(127, 0, 127)",
+                                        },
+                                    };
+                                    var data = [legion, swarm, faceless];
+
+                                    var container = $("#plot", e.target._contentNode)[0];
+                                    Plotly.newPlot(container, data);
+                                })
+                            })
                             .openOn(map);
                     })
                 },
