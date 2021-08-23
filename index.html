@@ -327,7 +327,10 @@
                                             x: battleData.results.map(r => r.Date),
                                             text: battleData.results.map(r => r["Battle Report Number"]),
                                             type: "scatter",
-                                            mode: "markers"
+                                            mode: "markers",
+                                            marker: {
+                                                color: "teal"
+                                            }
                                         }
                                         var data = [legion, swarm, faceless, battles];
 
