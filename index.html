@@ -245,7 +245,7 @@
                 "<br>Last updated: " + d.LastUpdateDateUtc.slice(0, 19) +
                 "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
                 "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
-                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div><div id='plot'></div>";
+                "</div><div class='faceless'>Faceless: " + d.FacelessCount.toLocaleString() + formatDelta(d.FacelessDelta) + "</div><div id='battles'></div><div id='plot'></div>";
             return desc;
         }
 
@@ -279,43 +279,61 @@
                                 px.y -= 400;
                                 map.panTo(map.unproject(px),{animate: true});
                                 sql = "SELECT * FROM changelog WHERE zoneId=" + zoneId;
-                                $.getJSON(API_BASE_URL + sql, function(data) {
-                                    console.log(data);
-                                    var timestamps = data.results.map(r => r.LastUpdateDateUtc)
-                                    var legion = {
-                                        name: "Legion",
-                                        x: timestamps,
-                                        y: data.results.map(r => r.LegionCount),
-                                        type: 'scatter',
-                                        mode: 'lines+markers',
-                                        marker: {
-                                            color: "rgb(255, 0, 0)",
-                                        },
-                                    };
-                                    var swarm = {
-                                        name: "Swarm",
-                                        x: timestamps,
-                                        y: data.results.map(r => r.SwarmCount),
-                                        type: 'scatter',
-                                        mode: 'lines+markers',
-                                        marker: {
-                                            color: "rgb(0, 255, 0)",
-                                        },
-                                    };
-                                    var faceless = {
-                                        name: "Faceless",
-                                        x: timestamps,
-                                        y: data.results.map(r => r.FacelessCount),
-                                        type: 'scatter',
-                                        mode: 'lines+markers',
-                                        marker: {
-                                            color: "rgb(127, 0, 127)",
-                                        },
-                                    };
-                                    var data = [legion, swarm, faceless];
+                                $.getJSON(API_BASE_URL + sql, function(changes) {
+                                    sql = "SELECT `Battle Report Number`,`Date` FROM battlestats WHERE `Zone ID`=" + zoneId;
+                                    $.getJSON(API_BASE_URL + sql, function(battleData) {
+                                        console.log(changes);
+                                        console.log(battleData)
+                                        if (battleData.results) {
+                                            var container = $("#battles", e.target._contentNode)[0];
+                                            $(container).append("MAZ battles: ")
+                                            for (var battle of battleData.results) {
+                                                $(container).append(`<a href="https://portal.qonqr.com/Home/BattleStatistics/${battle["Battle Report Number"]}">${battle.Date}</a> `);
+                                            }
+                                        }
+                                        var timestamps = changes.results.map(r => r.LastUpdateDateUtc)
+                                        var legion = {
+                                            name: "Legion",
+                                            x: timestamps,
+                                            y: changes.results.map(r => r.LegionCount),
+                                            type: 'scatter',
+                                            mode: 'lines+markers',
+                                            marker: {
+                                                color: "rgb(255, 0, 0)",
+                                            },
+                                        };
+                                        var swarm = {
+                                            name: "Swarm",
+                                            x: timestamps,
+                                            y: changes.results.map(r => r.SwarmCount),
+                                            type: 'scatter',
+                                            mode: 'lines+markers',
+                                            marker: {
+                                                color: "rgb(0, 255, 0)",
+                                            },
+                                        };
+                                        var faceless = {
+                                            name: "Faceless",
+                                            x: timestamps,
+                                            y: changes.results.map(r => r.FacelessCount),
+                                            type: 'scatter',
+                                            mode: 'lines+markers',
+                                            marker: {
+                                                color: "rgb(127, 0, 127)",
+                                            },
+                                        };
+                                        var battles = {
+                                            name: "MAZ",
+                                            x: battleData.results.map(r => r.Date),
+                                            text: battleData.results.map(r => r["Battle Report Number"]),
+                                            type: "scatter",
+                                            mode: "markers"
+                                        }
+                                        var data = [legion, swarm, faceless, battles];
 
-                                    var container = $("#plot", e.target._contentNode)[0];
-                                    Plotly.newPlot(container, data);
+                                        var container = $("#plot", e.target._contentNode)[0];
+                                        Plotly.newPlot(container, data);
+                                    });
                                 })
                             })
                             .openOn(map);
