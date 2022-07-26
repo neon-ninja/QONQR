@@ -103,6 +103,13 @@
             3: { r: 0.5, g: 0, b: 0.5 }
         }
 
+        const coloursHex = {
+            0: "#ff9100",
+            1: "#ff0000",
+            2: "#00ff00",
+            3: "#800080",
+        }
+
         var map = L.map('map', {
             center: [15, 30],
             zoom: 3,
@@ -266,13 +273,14 @@
                     var i = points.indexOf(feature);
                     var zoneId = data[i].ZoneId;
                     sql = "SELECT ZoneId,Description,ZoneControlState,DateCapturedUtc,LegionCount,SwarmCount,FacelessCount,LastUpdateDateUtc,Latitude,Longitude,LegionDelta,SwarmDelta,FacelessDelta,TotalCount,TotalDelta FROM zones WHERE zoneId=" + zoneId;
-                    $.getJSON(API_BASE_URL + sql, function(data) {
-                        console.log(data);
+                    $.getJSON(API_BASE_URL + sql, function(zoneData) {
+                        zoneData = zoneData.results[0]
+                        console.log(zoneData);
                         var point = e.latlng;
                         var best_width = Math.min($(window).width() - 100, 800)
                         L.popup({minWidth: best_width, maxHeight: 500})
                             .setLatLng(point)
-                            .setContent(buildDescString(data.results[0]))
+                            .setContent(buildDescString(zoneData))
                             .on("add", function(e) {
                                 var px = map.project(point);
                                 console.log(px)
@@ -333,9 +341,16 @@
                                             }
                                         }
                                         var data = [legion, swarm, faceless, battles];
-
+                                        var layout = {
+                                            title: {
+                                                text: zoneData.Description,
+                                                font: {
+                                                    color: coloursHex[zoneData.ZoneControlState],
+                                                }
+                                            }
+                                        }
                                         var container = $("#plot", e.target._contentNode)[0];
-                                        Plotly.newPlot(container, data);
+                                        Plotly.newPlot(container, data, layout);
                                     });
                                 })
                             })
