@@ -110,6 +110,33 @@
             3: "#800080",
         }
 
+        const ranges = {
+            "Zone Assault": 48,
+            "Shockwave": 40,
+            "Plasma Beam": 32,
+            "Deflection": 40,
+            "Seekers": 40,
+            "Absorbers": 40,
+            "Hardened Lattice": 16,
+            "Divert": 64,
+            "Bot Booster": 64,
+            "Strengthen": 64
+        }
+
+        var range_km = 1609.34;
+        if (new Date().getUTCDay() == 1) { // Monday
+            var week = Math.floor(new Date().getUTCDate() / 7);
+            if (week == 1) {
+                range_km = 4828.032;
+            } else if (week == 2) {
+                range_km = 9656.064;
+            } else if (week >= 3) {
+                range_km = 20116.8;
+            }
+        }
+
+        ranges["Nanomissiles"] = range_km
+
         var map = L.map('map', {
             center: [15, 30],
             zoom: 3,
@@ -144,18 +171,7 @@
             maxZoom: 5
         }).on("locationfound", function (e) {
             L.circle([e.latitude, e.longitude], { color: "cyan", radius: e.accuracy }).bindTooltip("You").addTo(map);
-            var range_km = 1609.34;
-            if (new Date().getUTCDay() == 1) { // Monday
-                var week = Math.floor(new Date().getUTCDate() / 7);
-                if (week == 1) {
-                    range_km = 4828.032;
-                } else if (week == 2) {
-                    range_km = 9656.064;
-                } else if (week >= 3) {
-                    range_km = 20116.8;
-                }
-            }
-            L.greatCircle([e.latitude, e.longitude], { color: "cyan", fillOpacity: 0, weight: .5, radius: range_km * 1000, interactive: false }).addTo(map);
+            L.greatCircle([e.latitude, e.longitude], { color: "cyan", fillOpacity: 0, weight: .5, radius: ranges.Nanomissiles * 1000, interactive: false }).addTo(map);
         });
 
         var baseMaps = {
@@ -175,6 +191,7 @@
         var legion = L.layerGroup().addTo(map);
         var swarm = L.layerGroup().addTo(map);
         var faceless = L.layerGroup().addTo(map);
+        var tactical = L.layerGroup().addTo(map);
 
         map.createPane('labels');
         map.getPane('labels').style.zIndex = 625;
@@ -200,6 +217,7 @@
             "Legion": legion,
             "Swarm": swarm,
             "Faceless": faceless,
+            "Tactical drawings": tactical,
             "City labels": labels,
             "City labels (white)": whitelabels,
         }
@@ -510,6 +528,17 @@
             query();
         });
 
+        map.on('click', function(e) {
+            var formation = $("#formation").val()
+            if (formation) {
+                console.log(formation, e)
+                var range_km = ranges[formation]
+                L.circle(e.latlng, { color: "cyan", weight: .5, radius: range_km * 1000, interactive: false }).addTo(tactical);
+            } else {
+                tactical.clearLayers();
+            }
+        });
+
         var legend = L.control({ position: 'bottomright' });
 
         function statsToggle() {
@@ -519,6 +548,11 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
+            var formations_HTML = `<select id="formation"><option></option>`
+            for (var k in ranges) {
+                formations_HTML += `<option>${k}</option>`
+            }
+            formations_HTML += "</select>"
             div.innerHTML += `Shows zones with activity <select id="filtertime">
                     <option value="all">All time</option>
                     <option value=">6 year">more than 6 years ago</option>
@@ -547,6 +581,7 @@
                 Player MAZ filter: <input id="filterplayer" type="text" placeholder="player name"/><br>
                 <a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>
                 <div id="zones_shown">0 zones shown</div>
+                Tactical Range Planner: ${formations_HTML}<br>
                 <a href='https://github.com/neon-ninja/QONQR'>GitHub</a>`;
             L.DomEvent.disableClickPropagation(div);
             return div;
