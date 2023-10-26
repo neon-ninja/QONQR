@@ -238,12 +238,14 @@
             query();
         }).on("overlayremove", function (e) {
             if (!window.data) return;
-            layers.splice(layers.indexOf(e.name), 1);
-            var indices = layers.map(e => Object.keys(overlays).indexOf(e));
-            window.teamfilter = indices;
-            updateURL();
-            window.data = {}
-            query();
+            if (layers.indexOf(e.name) !== -1) {
+                layers.splice(layers.indexOf(e.name), 1);
+                var indices = layers.map(e => Object.keys(overlays).indexOf(e));
+                window.teamfilter = indices;
+                updateURL();
+                window.data = {}
+                query();
+            }
         });
 
 
