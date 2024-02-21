@@ -441,6 +441,8 @@
                 return `Colocated = 1`
             } else if (typeof(window.countfilter) == "string" && window.countfilter.startsWith("MAZ")) {
                 return `ZoneId IN (SELECT \`Zone Id\` FROM battlestats GROUP BY \`Zone ID\` HAVING COUNT(*) >= ${window.countfilter.replace("MAZ", "")})`;
+            } else if (typeof(window.countfilter) == "string" && window.countfilter.startsWith("delta_")) {
+                return `TotalDelta >= ${window.countfilter.replace("delta_", "")}`;
             } else {
                 return `TotalCount >= ${window.countfilter}`
             }
@@ -584,6 +586,8 @@
                     <option value=MAZ100>Show zones that show up in the MAZ >= 100 times</option>
                     <option value=MAZ10>Show zones that show up in the MAZ >= 10 times</option>
                     <option value=MAZ1>Show zones that show up in the MAZ >= 1 time</option>
+                    <option value=delta_1e5>Show zones with a change > 100K</option>
+                    <option value=delta_1e6>Show zones with a change > 1M</option>
                 </select><br>
                 Player MAZ filter: <input id="filterplayer" type="text" placeholder="player name"/><br>
                 <a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>
