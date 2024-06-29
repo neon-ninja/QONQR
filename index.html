@@ -268,7 +268,7 @@
             var className = zoneControlState[d.ZoneControlState]
             var desc = "<b class='" + className + "'>" + d.Description + "</b>" +
                 "<br>Zone ID: " + d.ZoneId +
-                "<br>Captured: " + d.DateCapturedUtc.slice(0, 19) +
+                "<br>Captured: " + d.DateCapturedUtc?.slice(0, 19) +
                 "<br>Last updated: " + d.LastUpdateDateUtc.slice(0, 19) +
                 "<div class='legion'>Legion: " + d.LegionCount.toLocaleString() + formatDelta(d.LegionDelta) +
                 "</div><div class='swarm'>Swarm: " + d.SwarmCount.toLocaleString() + formatDelta(d.SwarmDelta) +
@@ -443,6 +443,8 @@
                 return `ZoneId IN (SELECT \`Zone Id\` FROM battlestats GROUP BY \`Zone ID\` HAVING COUNT(*) >= ${window.countfilter.replace("MAZ", "")})`;
             } else if (typeof(window.countfilter) == "string" && window.countfilter.startsWith("delta_")) {
                 return `TotalDelta >= ${window.countfilter.replace("delta_", "")}`;
+            } else if (window.countfilter == "capnull") {
+                return `DateCapturedUtc IS NULL`
             } else {
                 return `TotalCount >= ${window.countfilter}`
             }
@@ -583,6 +585,7 @@
                     <option value=1e8>Show zones > 100M</option>
                     <option value=contested>Show contested zones</option>
                     <option value=colocated>Show colocated zones</option>
+                    <option value=capnull>Show captured = NULL zones</option>
                     <option value=MAZ100>Show zones that show up in the MAZ >= 100 times</option>
                     <option value=MAZ10>Show zones that show up in the MAZ >= 10 times</option>
                     <option value=MAZ1>Show zones that show up in the MAZ >= 1 time</option>
