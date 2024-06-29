@@ -16,7 +16,7 @@ import websockets
 async def hello():
     uri = "wss://api-proxy.auckland-cer.cloud.edu.au/QONQR/websocket"
     start = time.time()
-    async with websockets.connect(uri, max_size=1e9) as websocket:
+    async with websockets.connect(uri, max_size=int(1e9)) as websocket:
         for i in range(10):
             await websocket.send(sql)
             resp = await websocket.recv()
