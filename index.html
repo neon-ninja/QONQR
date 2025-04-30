@@ -250,9 +250,14 @@
 
 
         function clamp(num) {
-            var min = 10;
+            var min = 5;
             var max = 50;
             return num <= min ? min : num >= max ? max : num;
+        }
+
+        function clampLog(value) {
+            var true_value = value * 1E6;
+            return 5 + 5*(Math.max(Math.log10(true_value),3)-3);
         }
 
         function formatDelta(delta) {
@@ -281,10 +286,12 @@
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
             if (window.pointsLayer) window.pointsLayer.remove()
+            var logscale = $("#logscale").is(":checked");
+            console.log(logscale)
             window.pointsLayer = L.glify.points({
                 map: map,
                 size: function (i, e) {
-                    return clamp(data[i].TotalCount / 1E6);
+                    return logscale ? clampLog(data[i].TotalCount / 1E6) : clamp(data[i].TotalCount / 1E6);
                 },
                 color: function (i, e) {
                     return colours[data[i].ZoneControlState]
@@ -593,6 +600,7 @@
                     <option value=delta_1e6>Show zones with a change > 1M</option>
                 </select><br>
                 Player MAZ filter: <input id="filterplayer" type="text" placeholder="player name"/><br>
+                Log scale: <input id="logscale" type="checkbox" checked/><br>
                 <a id='statsButton' class='link' onclick='statsToggle()'>Show/hide stats</a><div id='stats' style='display:none'></div>
                 <div id="zones_shown">0 zones shown</div>
                 Tactical Range Planner: ${formations_HTML}<br>
@@ -664,6 +672,10 @@
             window.data = {}
             query();
             updateURL();
+        })
+
+        $("#logscale").change(function() {
+            createPointsLayer();
         })
 
     </script>
