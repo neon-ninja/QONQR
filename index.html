@@ -315,56 +315,80 @@
                                 map.panTo(map.unproject(px),{animate: true});
                                 sql = "SELECT * FROM changelog WHERE zoneId=" + zoneId;
                                 $.getJSON(API_BASE_URL + sql, function(changes) {
-                                    sql = "SELECT `Battle Report Number`,`Date` FROM battlestats WHERE `Zone ID`=" + zoneId;
+                                    sql = "SELECT `Battle Report Number`,`Date`," +
+                                        "`Swarm Starting Bots`,`Legion Starting Bots`,`Faceless Starting Bots`," +
+                                        "`Swarm Ending Bots`,`Legion Ending Bots`,`Faceless Ending Bots` " +
+                                        "FROM battlestats WHERE `Zone ID`=" + zoneId + " ORDER BY `Date`";
                                     $.getJSON(API_BASE_URL + sql, function(battleData) {
                                         console.log(changes);
                                         console.log(battleData)
-                                        if (battleData.results) {
+                                        var battleRows = battleData.results || [];
+                                        if (battleRows.length) {
                                             var container = $("#battles", e.target._contentNode)[0];
                                             $(container).append("MAZ battles: ")
-                                            for (var battle of battleData.results) {
+                                            for (var battle of battleRows) {
                                                 $(container).append(`<a href="https://portal.qonqr.com/Home/BattleStatistics/${battle["Battle Report Number"]}">${battle.Date}</a> `);
                                             }
                                         }
-                                        var timestamps = changes.results.map(r => r.LastUpdateDateUtc)
-                                        var legion = {
+                                        // The changelog only records a zone when our scraper sees it change, so it
+                                        // can be sparse. MAZ battle reports give starting and ending bot counts per
+                                        // faction for every battle day, so merge those in to fill the gaps in the
+                                        // faction lines. Starting bots are the counts as the battle day begins and
+                                        // ending bots the counts once it is over, so timestamp them at the start and
+                                        // end of that day respectively.
+                                        function battleStart(date) {
+                                            return date + " 00:00:00";
+                                        }
+                                        function battleEnd(date) {
+                                            return date + " 23:59:59";
+                                        }
+                                        function factionSeries(changelogField, startField, endField) {
+                                            var points = changes.results.map(r => [r.LastUpdateDateUtc, r[changelogField]]);
+                                            for (var r of battleRows) {
+                                                points.push([battleStart(r.Date), r[startField]]);
+                                                points.push([battleEnd(r.Date), r[endField]]);
+                                            }
+                                            points.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+                                            return {
+                                                x: points.map(p => p[0]),
+                                                y: points.map(p => p[1])
+                                            };
+                                        }
+                                        var legion = Object.assign({
                                             name: "Legion",
-                                            x: timestamps,
-                                            y: changes.results.map(r => r.LegionCount),
                                             type: 'scatter',
                                             mode: 'lines+markers',
                                             marker: {
                                                 color: "rgb(255, 0, 0)",
                                             },
-                                        };
-                                        var swarm = {
+                                        }, factionSeries("LegionCount", "Legion Starting Bots", "Legion Ending Bots"));
+                                        var swarm = Object.assign({
                                             name: "Swarm",
-                                            x: timestamps,
-                                            y: changes.results.map(r => r.SwarmCount),
                                             type: 'scatter',
                                             mode: 'lines+markers',
                                             marker: {
                                                 color: "rgb(0, 255, 0)",
                                             },
-                                        };
-                                        var faceless = {
+                                        }, factionSeries("SwarmCount", "Swarm Starting Bots", "Swarm Ending Bots"));
+                                        var faceless = Object.assign({
                                             name: "Faceless",
-                                            x: timestamps,
-                                            y: changes.results.map(r => r.FacelessCount),
                                             type: 'scatter',
                                             mode: 'lines+markers',
                                             marker: {
                                                 color: "rgb(127, 0, 127)",
                                             },
-                                        };
+                                        }, factionSeries("FacelessCount", "Faceless Starting Bots", "Faceless Ending Bots"));
                                         var battles = {
                                             name: "MAZ",
-                                            x: battleData.results.map(r => r.Date),
-                                            text: battleData.results.map(r => r["Battle Report Number"]),
+                                            x: battleRows.map(r => battleEnd(r.Date)),
+                                            y: battleRows.map(r => r["Swarm Ending Bots"] + r["Legion Ending Bots"] + r["Faceless Ending Bots"]),
+                                            text: battleRows.map(r => r["Battle Report Number"]),
                                             type: "scatter",
                                             mode: "markers",
                                             marker: {
-                                                color: "teal"
+                                                color: "teal",
+                                                size: 5,
+                                                opacity: .6
                                             }
                                         }
                                         var data = [legion, swarm, faceless, battles];
