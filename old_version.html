@@ -262,7 +262,14 @@
             }
             console.log(data.length);
             var points = data.map(e => [e.Latitude, e.Longitude]);
-            if (window.pointsLayer) window.pointsLayer.remove()
+            if (window.pointsLayer) {
+                // Free the old layer's WebGL context, otherwise browsers hit their context limit
+                // and drop the oldest one (the basemap) after enough pans/zooms
+                var gl = window.pointsLayer.gl;
+                window.pointsLayer.remove();
+                var loseContext = gl && gl.getExtension("WEBGL_lose_context");
+                if (loseContext) loseContext.loseContext();
+            }
             window.pointsLayer = L.glify.points({
                 map: map,
                 size: function (i, e) {
