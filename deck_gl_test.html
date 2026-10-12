@@ -7,10 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="shortcut icon" href="https://qonqr.com/Images/favicon.ico/android-icon-192x192.png" />
     <script src="https://unpkg.com/deck.gl@^8.2.0/dist.min.js"></script>
-    <script src="https://unpkg.com/@deck.gl/carto@^8.2.0/dist.min.js"></script>
-    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
         html,
         body {
@@ -84,7 +83,8 @@
 
 
         var map = new deck.DeckGL({
-            mapStyle: deck.carto.BASEMAP.DARK_MATTER,
+            map: maplibregl,
+            mapStyle: "https://tiles.openfreemap.org/styles/dark",
             initialViewState: {
                 longitude: 0,
                 latitude: 0,
